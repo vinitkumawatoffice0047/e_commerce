@@ -9,6 +9,7 @@ class AppSharedPreferences {
   static const token = "token";
   static const userID = "userID";
   static const mobileNo = "mobileNo";
+  static const email = "email";
   static const userName = "userName";
   static const otpToken = "otpToken";
   static const userData = "userData";

@@ -333,4 +333,20 @@ class FemaleWellness {
     data['short_discription'] = this.shortDiscription;
     return data;
   }
+
+  // // Cart ke liye proper format mein convert karne ke lye hai ye
+  // Map<String, dynamic> toCartItem() {
+  //   return {
+  //     'product_id': this.product_id?.toString() ?? '',
+  //     'stock': '1', // Default stock value
+  //     'name': this.title?.toString() ?? 'No Title',
+  //     'short_discription': this.shortDiscription?.toString() ??
+  //         this.slug?.toString() ??
+  //         'No Description',
+  //     'price': this.discPrice ?? this.price ?? 0,
+  //     'image': (this.images != null && this.images!.isNotEmpty)
+  //         ? this.images!.first.toString()
+  //         : 'assets/images/noImageIcon.png',
+  //   };
+  // }
 }

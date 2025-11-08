@@ -38,9 +38,10 @@ class ProductResponseModel {
 }
 
 class Product {
-  int? id;
+  String? product_id;
+  dynamic? id;
   String? title;
-  int? categoryId;
+  dynamic? categoryId;
   String? discription;
   dynamic? price;
   dynamic? discPrice;
@@ -49,7 +50,9 @@ class Product {
   List<String>? images;
 
   Product(
-      {this.id,
+      {
+        this.product_id,
+        this.id,
         this.title,
         this.categoryId,
         this.discription,
@@ -60,6 +63,7 @@ class Product {
         this.images});
 
   Product.fromJson(Map<String, dynamic> json) {
+    product_id = json['product_id'];
     id = json['id'];
     title = json['title'];
     categoryId = json['category_id'];
@@ -73,6 +77,7 @@ class Product {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['product_id'] = this.product_id;
     data['id'] = this.id;
     data['title'] = this.title;
     data['category_id'] = this.categoryId;
@@ -83,5 +88,21 @@ class Product {
     data['short_discription'] = this.shortDiscription;
     data['images'] = this.images;
     return data;
+  }
+
+  // Cart ke liye proper format mein convert karne ke lye hai ye
+  Map<String, dynamic> toCartItem() {
+    return {
+      'product_id': this.product_id?.toString() ?? '',
+      'stock': '1', // Default stock value
+      'name': this.title?.toString() ?? 'No Title',
+      'short_discription': this.shortDiscription?.toString() ??
+          this.slug?.toString() ??
+          'No Description',
+      'price': this.discPrice ?? this.price ?? 0,
+      'image': (this.images != null && this.images!.isNotEmpty)
+          ? this.images!.first.toString()
+          : 'assets/images/noImageIcon.png',
+    };
   }
 }

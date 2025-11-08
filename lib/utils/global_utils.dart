@@ -680,9 +680,11 @@ class GlobalUtils {
     FocusNode? focusNode,
     VoidCallback? onEditingComplete,
     Function(String)? onChanged,
+    Function(String)? onSubmitted,
     int? maxLength,
     int? maxLines,
     bool autoValidate = false,
+    bool shouldValidate = false,
   }) {
     // State management for password visibility
     final ValueNotifier<bool> obscureTextNotifier = ValueNotifier<bool>(true);
@@ -706,7 +708,7 @@ class GlobalUtils {
       } else if (isMobileNumber) {
         return mobileValidator(value);
       } else {
-        if (value == null || value.isEmpty) {
+        if (value == null || value.isEmpty && shouldValidate) {
           return 'This field cannot be empty.';
         }
         return null;
@@ -794,12 +796,15 @@ class GlobalUtils {
                       enabled: enabled,
                       obscureText: (isPassword || isConfirmPassword) && obscureValue,
                       validator: (value) {
+                        if(shouldValidate){
                         final error = baseValidatorFunction(value);
                         // Update error message immediately
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           errorMessageNotifier.value = error;
                         });
-                        return error;
+                        return error;}else{
+                          return null;
+                        }
                       },
                       cursorColor: defaultFocusedBorderColor,
                       keyboardType: getKeyboardType(),
@@ -818,6 +823,11 @@ class GlobalUtils {
 
                         if (onChanged != null) {
                           onChanged(value);
+                        }
+                      },
+                      onFieldSubmitted: (value) {
+                        if (onSubmitted != null) {
+                          onSubmitted(value);
                         }
                       },
                       maxLines: (isPassword || isConfirmPassword) ? 1 : (maxLines ?? 1),

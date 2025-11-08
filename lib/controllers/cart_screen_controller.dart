@@ -133,7 +133,7 @@ class AddToCartScreenController extends GetxController{
             text: response['message'], // Display the message from the response
             confirmBtnText: 'OK',
             onConfirmBtnTap: () {
-              Get.offAll(MainScreen()); // Directly navigate to a specific screen
+              Get.offAll(MainScreen(selectedIndex: 2,));
              // Navigator.of(context).popUntil((route) => route.isFirst);
             },
           );//         Get.back();

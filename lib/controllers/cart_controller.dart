@@ -4,15 +4,16 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/product_model.dart';
 import '../utils/ConsoleLog.dart';
 
 class CartController extends GetxController {
-  final cartItems = <Map<String, dynamic>>[].obs;
+  // final cartItems = <Map<String, dynamic>>[].obs;
+  final cartItems = <ProductItem>[].obs;
   final cartCount = 0.obs;
   RxString currentAddress = ''.obs;
   RxString pinCode = ''.obs;
   Position? currentLocation ;
-
 
   @override
   void onInit() {
@@ -81,8 +82,6 @@ class CartController extends GetxController {
     }
   }
 
-
-
   Future<void> getCurrentAddress(context) async {
     final prefs = await SharedPreferences.getInstance();
     final savedAddress = prefs.getString('current_selected_address');
@@ -131,7 +130,8 @@ class CartController extends GetxController {
       final cartData = prefs.getString('cart_items');
       if (cartData != null) {
         final List<dynamic> decoded = json.decode(cartData);
-        cartItems.value = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
+        // cartItems.value = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
+        cartItems.value = decoded.map((item) => ProductItem.fromJson(item)).toList();
         updateCartCount();
       }
     } catch (e) {
@@ -152,19 +152,24 @@ class CartController extends GetxController {
 
   // Cart count update karna
   void updateCartCount() {
-    cartCount.value = cartItems.fold(0, (sum, item) => sum + (item['stock'] as int));
+    // cartCount.value = cartItems.fold(0, (sum, item) => sum + (item['stock'] as int));
+    cartCount.value = cartItems.fold(0, (sum, item) => sum + item.qty);
   }
 
   // Product ko cart mein add karna
-  void addToCart(Map<String, dynamic> product) {
-    final index = cartItems.indexWhere((item) => item['product_id'] == product['product_id']);
+  void addToCart(/*Map<String, dynamic> product*/ProductItem product) {
+    // final index = cartItems.indexWhere((item) => item['product_id'] == product['product_id']);
+    final index = cartItems.indexWhere((item) => item.productId == product.productId);
 
     if (index != -1) {
       // Product already exists, increase quantity
-      cartItems[index]['stock']++;
+      // cartItems[index]['stock']++;
+      cartItems[index].qty++;
+      cartItems.refresh();
     } else {
       // New product, add to cart
-      product['stock'] = 1;
+      // product['stock'] = 1;
+      product.qty = 1;
       cartItems.add(product);
     }
 
@@ -173,7 +178,8 @@ class CartController extends GetxController {
 
     Get.snackbar(
       'Added to Cart',
-      '${product['name']} added successfully',
+      // '${product['name']} added successfully',
+      '${product.title} added successfully',
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: Color(0xff80a8ff),
       colorText: Colors.white,
@@ -188,7 +194,8 @@ class CartController extends GetxController {
 
   // Cart se product remove karna
   void removeFromCart(String productId) {
-    cartItems.removeWhere((item) => item['product_id'] == productId);
+    // cartItems.removeWhere((item) => item['product_id'] == productId);
+    cartItems.removeWhere((item) => item.productId == productId);
     updateCartCount();
     saveCartToPreferences();
 
@@ -198,12 +205,15 @@ class CartController extends GetxController {
 
   // Quantity update karna
   void updateQuantity(String productId, int quantity) {
-    final index = cartItems.indexWhere((item) => item['product_id'] == productId);
+    // final index = cartItems.indexWhere((item) => item['product_id'] == productId);
+    final index = cartItems.indexWhere((item) => item.productId == productId);
     if (index != -1) {
       if (quantity <= 0) {
         removeFromCart(productId);
       } else {
-        cartItems[index]['stock'] = quantity;
+        // cartItems[index]['stock'] = quantity;
+        cartItems[index].qty = quantity;
+        cartItems.refresh();
         updateCartCount();
         saveCartToPreferences();
 
@@ -215,19 +225,25 @@ class CartController extends GetxController {
 
   // Product ka current quantity get karna
   int getProductQuantity(String productId) {
-    final index = cartItems.indexWhere((item) => item['product_id'] == productId);
-    return index != -1 ? cartItems[index]['stock'] : 0;
+    // final index = cartItems.indexWhere((item) => item['product_id'] == productId);
+    // return index != -1 ? cartItems[index]['stock'] : 0;
+    final index = cartItems.indexWhere((item) => item.productId == productId);
+    return index != -1 ? cartItems[index].qty : 0;
   }
 
   // Check karna ki product cart mein hai ya nahi
   bool isInCart(String productId) {
-    return cartItems.any((item) => item['product_id'] == productId);
+    return cartItems.any((item) => item.productId == productId);
   }
 
   // Total price calculate karna
   double getTotalPrice() {
-    return cartItems.fold(0.0, (sum, item) =>
-    sum + (item['price'] * item['stock']));
+    // return cartItems.fold(0.0, (sum, item) =>
+    // sum + (item['price'] * item['stock']));
+    return cartItems.fold(0.0, (sum, item) {
+      final priceToUse = item.sellPrice is double ? item.sellPrice : item.sellPrice;
+      return sum + (priceToUse * item.qty);
+    });
   }
 
   // Cart clear karna

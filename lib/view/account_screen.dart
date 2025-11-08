@@ -3,14 +3,13 @@ import 'package:e_commerce_app/view/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../controllers/login_controller.dart';
 import '../controllers/theme_controller.dart';
 import '../utils/ConsoleLog.dart';
 import '../utils/app_shared_preferences.dart';
 import '../utils/global_utils.dart';
 import 'edit_location_screen.dart';
 import 'notification_screen.dart';
-
-final ThemeController themeController = Get.put(ThemeController());
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -20,8 +19,20 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
+  final ThemeController themeController = Get.put(ThemeController());
+  final LoginController loginController = Get.put(LoginController());
+  @override
+  void initState(){
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      loginController.init();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final festival = themeController.getCurrentFestival();
+    final festivalData = themeController.festivalThemes[festival];
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     Future<void> loadLocationScreen(BuildContext context) async{
@@ -72,9 +83,17 @@ class _AccountScreenState extends State<AccountScreen> {
               // 🔹 Profile Header
               Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xff80a8ff), Color(0xff5e60ce)],
+                decoration: BoxDecoration(
+                  gradient: festival != 'default' && festivalData != null
+                      ? LinearGradient(
+                    colors: festivalData['colors'] as List<Color>,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                      : LinearGradient(
+                    colors: GlobalUtils.getBackgroundColor(),
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(30),
@@ -82,42 +101,44 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 ),
                 padding: const EdgeInsets.all(30),
-                child: Column(
-                  children: [
-                    const CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.person, size: 50, color: Color(0xff80a8ff)),
-                    ),
-                    const SizedBox(height: 15),
-                    const Text(
-                      'John Doe',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                child: Obx(()=>
+                  Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: isDark ? GlobalUtils.globalDarkIconColor : GlobalUtils.globalLightIconColor,
+                        child: Icon(Icons.person, size: 50, color: Color(0xff80a8ff)),
                       ),
-                    ),
-                    const Text(
-                      'john.doe@email.com',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                    ),
-                    const SizedBox(height: 15),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GlobalUtils.CustomButton(
-                          onPressed: () {},
-                          text: 'Edit Profile',
-                          textColor: const Color(0xff80a8ff),
-                          backgroundColor: Colors.white,
-                          borderRadius: 20,
-                          animation: ButtonAnimation.scale,
-                          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+                      const SizedBox(height: 15),
+                      Text(
+                        /*'Vinit'*/loginController.name.value,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      Text(
+                        /*'vinitkumawat@gmail.com'*/loginController.email.value,
+                        style: TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                      const SizedBox(height: 15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          GlobalUtils.CustomButton(
+                            onPressed: () {},
+                            text: 'Edit Profile',
+                            textColor: const Color(0xff80a8ff),
+                            backgroundColor: isDark ? GlobalUtils.globalDarkIconColor : GlobalUtils.globalLightIconColor,
+                            borderRadius: 20,
+                            animation: ButtonAnimation.scale,
+                            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -147,7 +168,6 @@ class _AccountScreenState extends State<AccountScreen> {
                   onConfirm: () => logoutUser(),
                 );
               }),
-
               const SizedBox(height: 20),
             ],
           ),

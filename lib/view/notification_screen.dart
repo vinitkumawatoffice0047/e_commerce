@@ -25,9 +25,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-      final festival = themeController.getCurrentFestival();
-      final festivalData = themeController.festivalThemes[festival];
-      final isDark = Theme.of(context).brightness == Brightness.dark;
+    final festival = themeController.getCurrentFestival();
+    final festivalData = themeController.festivalThemes[festival];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: isDark ? const Color(0xff1a1a1a) : Colors.white,
       appBar: AppBar(

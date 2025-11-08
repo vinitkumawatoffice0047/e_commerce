@@ -47,7 +47,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     // getToken(context);
     Future.delayed(Duration(seconds: 3), () {
       if(isLogin) {
-        Get.offAll(() => MainScreen(), transition: Transition.fadeIn);
+        Get.offAll(() => MainScreen(selectedIndex: 0), transition: Transition.fadeIn);
       } else {
         Get.offAll(LoginScreen(), transition: Transition.fadeIn);
       }

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:e_commerce_app/api/web_api_constant.dart';
 import 'package:e_commerce_app/utils/ConsoleLog.dart';
+import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../models/CartListApiResponseModel.dart';
 import '../models/HomeDetailsApiResponseModel.dart';
@@ -493,26 +494,46 @@ class ApiProvider {
       return result;
     }
   }
-
-  //Search Product Api (Post)
   Future<SearchResponseApi?> searchProductApi(context, String url, Map<String, dynamic> dictParameter, String token) async {
     SearchResponseApi? result;
+    // if(await ConnectionValidator().check()){
     try{
-      CustomLoading().show(context);
+
+      // CustomLoading().show(context);
       final Response? response = await requestPostForApi(context, url, dictParameter, token);
-      ConsoleLog.printColor("ResponseNew..........$response.........", color: "green");
+
       if(response != null && response.statusCode == 200){
         result = SearchResponseApi.fromJson(response.data);
-        ConsoleLog.printSuccess("$result");
       }
-      CustomLoading().hide(context);
+      // CustomLoading().hide(context);
+
       return result;
     }catch(e) {
-      ConsoleLog.printError("Exception..........$e.........");
+      ConsoleLog.printError("Exception1..........$e.........");
       Fluttertoast.showToast(msg: "Something went wrong");
       return result;
     }
   }
+
+  //Search Product Api (Post)
+  // Future<SearchResponseApi?> searchProductApi(context, String url, Map<String, dynamic> dictParameter, String token) async {
+  //   SearchResponseApi? result;
+  //   try{
+  //     CustomLoading().show(context);
+  //     final Response? response = await requestPostForApi(context, url, dictParameter, token);
+  //     ConsoleLog.printColor("ResponseNew..........$response.........", color: "green");
+  //     if(response != null && response.statusCode == 200){
+  //       result = SearchResponseApi.fromJson(response.data);
+  //       // ConsoleLog.printSuccess("$result");
+  //     }
+  //     // CustomLoading().hide(context);
+  //     return result;
+  //   }catch(e) {
+  //     ConsoleLog.printError("Exception..........$e.........");
+  //     Fluttertoast.showToast(msg: "Something went wrong");
+  //     return result;
+  //   }
+  // }
 
   //Sub Category Api (Get)
   Future<CategoriesResponseApi?> getSubCategorisAPI(context, Map<String, dynamic> dictParameter,String token) async {
@@ -604,6 +625,38 @@ class ApiProvider {
       return result;
     }
   }
+
+
+  // Future<SearchResponseApi?> searchProduct(
+  //     BuildContext context,
+  //     String searchText,
+  //     String token
+  //     ) async {
+  //   try {
+  //     CustomLoading().show(context);
+  //     final response = await dio.post(
+  //       WebApiConstant.API_URL_SEARCH_PRODUCT,
+  //       data: {
+  //         'title': searchText,
+  //       },
+  //       options: Options(
+  //         headers: {
+  //           'Authorization': 'Bearer $token',
+  //           'Content-Type': 'application/json',
+  //         },
+  //       ),
+  //     );
+  //
+  //     CustomLoading().hide(context);
+  //     if (response.statusCode == 200) {
+  //       return SearchResponseApi.fromJson(response.data);
+  //     }
+  //   } catch (e) {
+  //     CustomLoading().hide(context);
+  //     print('API Error: $e');
+  //   }
+  //   return null;
+  // }
 
   //
   // Future<DepositResponse?> loadwalleRazorPay(context,String token,Map<String, dynamic> dict) async {

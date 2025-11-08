@@ -23,15 +23,22 @@ final List<Widget> screens = [
   AccountScreen(),
 ];
 
-class MainScreen extends StatelessWidget {
-  const MainScreen({super.key});
+class MainScreen extends StatefulWidget {
+  int selectedIndex = 0;
+  MainScreen({super.key, required this.selectedIndex});
 
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: ()=> GlobalUtils.showConfirmationDialog(title: "Exit", message: "Are you sure want to exit app?"),
       child: Scaffold(
-        body: Obx(() => screens[navController.selectedIndex.value]),
+        body: Obx(() => screens[widget.selectedIndex != 2 ? navController.selectedIndex.value : widget.selectedIndex],
+        ),
         bottomNavigationBar: Obx(() {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           return Container(
@@ -65,11 +72,11 @@ class MainScreen extends StatelessWidget {
                 selectedFontSize: 12,
                 unselectedFontSize: 11,
                 items: [
-                  _buildNavItem(Icons.home_rounded, 'Home', 0),
-                  _buildNavItem(Icons.grid_view_rounded, 'Categories', 1),
-                  _buildNavItem(Icons.search_rounded, 'Search', 2),
-                  _buildNavItem(Icons.shopping_cart_rounded, 'Cart', 3, badge: cartController.cartCount.value),
-                  _buildNavItem(Icons.person_rounded, 'Account', 4),
+                  buildNavItem(Icons.home_rounded, 'Home', 0),
+                  buildNavItem(Icons.grid_view_rounded, 'Categories', 1),
+                  buildNavItem(Icons.search_rounded, 'Search', 2),
+                  buildNavItem(Icons.shopping_cart_rounded, 'Cart', 3, badge: cartController.cartCount.value),
+                  buildNavItem(Icons.person_rounded, 'Account', 4),
                 ],
               ),
             ),
@@ -79,7 +86,7 @@ class MainScreen extends StatelessWidget {
     );
   }
 
-  BottomNavigationBarItem _buildNavItem(IconData icon, String label, int index, {int badge = 0}) {
+  BottomNavigationBarItem buildNavItem(IconData icon, String label, int index, {int badge = 0}) {
     return BottomNavigationBarItem(
       icon: Obx(() {
         final isSelected = navController.selectedIndex.value == index;

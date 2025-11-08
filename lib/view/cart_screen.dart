@@ -5,6 +5,7 @@ import '../controllers/cart_screen_controller.dart';
 import '../controllers/navigation_controller.dart';
 import '../controllers/theme_controller.dart';
 import '../utils/global_utils.dart';
+import '../utils/reusable_product_grid.dart';
 
 final CartController cartController = Get.put(CartController());
 
@@ -117,117 +118,137 @@ class _CartScreenState extends State<CartScreen> {
         return Column(
           children: [
             Expanded(
-              child: ListView.builder(
+              child: ReusableCartList(
+                cartItems: cartController.cartItems,
                 padding: EdgeInsets.all(20),
-                itemCount: cartController.cartItems.length,
-                itemBuilder: (context, index) {
-                  final item = cartController.cartItems[index];
-                  return Container(
-                    margin: EdgeInsets.only(bottom: 15),
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isDark ? Color(0xff2a2a2a) : Color(0xfff5f5f5),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          // child: Icon(item['image'] as IconData, size: 35, color: Colors.grey),
-                          child: Image.network(item['image'] as String, fit: BoxFit.contain),
-                        ),
-                        SizedBox(width: 15),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item['name'] as String,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: isDark ? Colors.white : Colors.black87,
-                                ),
-                              ),
-                              SizedBox(height: 5),
-                              Text(
-                                item['short_discription'] as String,
-                                style: TextStyle(color: Colors.grey, fontSize: 12),
-                              ),
-                              SizedBox(height: 5),
-                              Text(
-                                '₹${item['price']}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Color(0xff80a8ff),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Color(0xff80a8ff).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              GlobalUtils.CustomButton(
-                                onPressed: () {
-                                  cartController.updateQuantity(
-                                    item['product_id'] as String,
-                                    item['stock'] - 1,
-                                  );
-                                },
-                                icon: Icon(Icons.remove),
-                                iconColor: Color(0xff80a8ff),
-                                backgroundColor: Colors.transparent,
-                                showBorder: false,
-                                showShadow: false,
-                                animation: ButtonAnimation.scale,
-                                padding: EdgeInsets.all(8),
-                              ),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 12),
-                                child: Text(
-                                  '${item['stock']}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: isDark ? Colors.white : Colors.black87,
-                                  ),
-                                ),
-                              ),
-                              GlobalUtils.CustomButton(
-                                onPressed: () {
-                                  cartController.updateQuantity(
-                                    item['product_id'] as String,
-                                    item['stock'] + 1,
-                                  );
-                                },
-                                icon: Icon(Icons.add),
-                                iconColor: Color(0xff80a8ff),
-                                backgroundColor: Colors.transparent,
-                                showBorder: false,
-                                showShadow: false,
-                                animation: ButtonAnimation.scale,
-                                padding: EdgeInsets.all(8),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
               ),
             ),
+            // Expanded(
+            //   child: ListView.builder(
+            //     padding: EdgeInsets.all(20),
+            //     itemCount: cartController.cartItems.length,
+            //     itemBuilder: (context, index) {
+            //       final item = cartController.cartItems[index];
+            //       return Container(
+            //         margin: EdgeInsets.only(bottom: 15),
+            //         padding: EdgeInsets.all(12),
+            //         decoration: BoxDecoration(
+            //           color: isDark ? Color(0xff2a2a2a) : Color(0xfff5f5f5),
+            //           borderRadius: BorderRadius.circular(15),
+            //         ),
+            //         child: Row(
+            //           children: [
+            //             Container(
+            //               width: 70,
+            //               height: 70,
+            //               decoration: BoxDecoration(
+            //                 color: Colors.white,
+            //                 borderRadius: BorderRadius.circular(12),
+            //               ),
+            //               // child: Image.network(item['image'] as String, fit: BoxFit.contain),
+            //               child: Image.network(
+            //                 item.image,
+            //                 fit: BoxFit.contain,
+            //                 errorBuilder: (context, error, stackTrace) {
+            //                   return Icon(Icons.image, size: 35, color: Colors.grey);
+            //                 },
+            //               ),
+            //             ),
+            //             SizedBox(width: 15),
+            //             Expanded(
+            //               child: Column(
+            //                 crossAxisAlignment: CrossAxisAlignment.start,
+            //                 children: [
+            //                   Text(
+            //                     // item['name'] as String,
+            //                     item.title,
+            //                     style: TextStyle(
+            //                       fontWeight: FontWeight.bold,
+            //                       fontSize: 16,
+            //                       color: isDark ? Colors.white : Colors.black87,
+            //                     ),
+            //                   ),
+            //                   SizedBox(height: 5),
+            //                   Text(
+            //                     // item['short_discription'] as String,
+            //                     item.discription,
+            //                     style: TextStyle(color: Colors.grey, fontSize: 12),
+            //                   ),
+            //                   SizedBox(height: 5),
+            //                   Text(
+            //                     // '₹${item['price']}',
+            //                     '₹${item.sellPrice}',
+            //                     style: TextStyle(
+            //                       fontWeight: FontWeight.bold,
+            //                       fontSize: 16,
+            //                       color: Color(0xff80a8ff),
+            //                     ),
+            //                   ),
+            //                 ],
+            //               ),
+            //             ),
+            //             Container(
+            //               decoration: BoxDecoration(
+            //                 color: Color(0xff80a8ff).withOpacity(0.1),
+            //                 borderRadius: BorderRadius.circular(10),
+            //               ),
+            //               child: Row(
+            //                 children: [
+            //                   GlobalUtils.CustomButton(
+            //                     onPressed: () {
+            //                       cartController.updateQuantity(
+            //                         // item['product_id'] as String,
+            //                         // item['stock'] - 1,
+            //                         item.productId,
+            //                         item.qty - 1,
+            //                       );
+            //                     },
+            //                     icon: Icon(Icons.remove),
+            //                     iconColor: Color(0xff80a8ff),
+            //                     backgroundColor: Colors.transparent,
+            //                     showBorder: false,
+            //                     showShadow: false,
+            //                     animation: ButtonAnimation.scale,
+            //                     padding: EdgeInsets.all(8),
+            //                   ),
+            //                   Container(
+            //                     padding: EdgeInsets.symmetric(horizontal: 12),
+            //                     child: Text(
+            //                       // '${item['stock']}',
+            //                       '${item.qty}',
+            //                       style: TextStyle(
+            //                         fontWeight: FontWeight.bold,
+            //                         fontSize: 16,
+            //                         color: isDark ? Colors.white : Colors.black87,
+            //                       ),
+            //                     ),
+            //                   ),
+            //                   GlobalUtils.CustomButton(
+            //                     onPressed: () {
+            //                       cartController.updateQuantity(
+            //                         // item['product_id'] as String,
+            //                         // item['stock'] + 1,
+            //                         item.productId,
+            //                         item.qty + 1,
+            //                       );
+            //                     },
+            //                     icon: Icon(Icons.add),
+            //                     iconColor: Color(0xff80a8ff),
+            //                     backgroundColor: Colors.transparent,
+            //                     showBorder: false,
+            //                     showShadow: false,
+            //                     animation: ButtonAnimation.scale,
+            //                     padding: EdgeInsets.all(8),
+            //                   ),
+            //                 ],
+            //               ),
+            //             ),
+            //           ],
+            //         ),
+            //       );
+            //     },
+            //   ),
+            // ),
             Container(
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(

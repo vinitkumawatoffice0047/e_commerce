@@ -1,7 +1,6 @@
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../view/login_screen.dart';
 import 'app_shared_preferences.dart';
 
