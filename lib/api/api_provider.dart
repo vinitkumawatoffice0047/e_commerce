@@ -329,13 +329,13 @@ class ApiProvider {
   }
 
   //Category To Product Api (Post)
-  Future<ProductResponseModel?> categoryToProductApi(context,Map<String, dynamic> dictParameter,String token) async {
-    ProductResponseModel? result;
+  Future<ProductDetailsResponseModel?> categoryToProductApi(context,Map<String, dynamic> dictParameter,String token) async {
+    ProductDetailsResponseModel? result;
     try{
       final Response? response = await requestPostForApi(context, WebApiConstant.API_URL_CATEGORY_TO_PRODUCT, dictParameter, token);
       ConsoleLog.printJsonResponse("ResponseNew..........$response.........", color: "green", tag: "Category To Product Api (Post)");
       if(response != null && response.statusCode == 200){
-        result = ProductResponseModel.fromJson(response.data);
+        result = ProductDetailsResponseModel.fromJson(response.data);
         ConsoleLog.printSuccess("$result");
       }
       return result;

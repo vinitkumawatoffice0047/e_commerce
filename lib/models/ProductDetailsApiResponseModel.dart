@@ -3,7 +3,7 @@ class ProductDetailsResponseModel {
   String? message;
   int? errorCode;
   String? state;
-  Data? data;
+  ProductDetailsResponseData? data;
 
   ProductDetailsResponseModel(
       {this.error, this.message, this.errorCode, this.state, this.data});
@@ -13,7 +13,7 @@ class ProductDetailsResponseModel {
     message = json['message'];
     errorCode = json['errorCode'];
     state = json['state'];
-    data = json['data'] != null ? new Data.fromJson(json['data']) : null;
+    data = json['data'] != null ? new ProductDetailsResponseData.fromJson(json['data']) : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -29,40 +29,46 @@ class ProductDetailsResponseModel {
   }
 }
 
-class Data {
+class ProductDetailsResponseData {
   int? id;
   String? title;
-  int? categoryId;
+  dynamic? categoryId;
+  dynamic? product_id;
   String? discription;
   dynamic? price;
   dynamic? discPrice;
   String? slug;
+  int? stock;
   String? shortDiscription;
   String? image;
   List<String>? images;
 
-  Data(
+  ProductDetailsResponseData(
       {this.id,
         this.title,
         this.categoryId,
         this.discription,
         this.price,
         this.discPrice,
+        this.product_id,
         this.slug,
+        this.stock,
         this.shortDiscription,
         this.image,
         this.images});
 
-  Data.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    title = json['title'];
-    categoryId = json['category_id'];
-    discription = json['discription'];
-    price = json['price'];
-    discPrice = json['disc_price'];
-    slug = json['slug'];
-    shortDiscription = json['short_discription'];
-    image = json['image'];
+  ProductDetailsResponseData.fromJson(Map<String, dynamic> json) {
+    id = json['id'] ?? 0;
+    title = json['title'].toString();
+    categoryId = json['category_id'].toString();
+    product_id = json['product_id'].toString();
+    discription = json['discription'].toString();
+    price = json['price'].toString();
+    discPrice = json['disc_price'].toString();
+    slug = json['slug'].toString();
+    stock = json['stock'];
+    shortDiscription = json['short_discription'].toString();
+    image = json['image'].toString();
     images = json['images'].cast<String>();
   }
 
@@ -75,7 +81,9 @@ class Data {
     data['price'] = this.price;
     data['disc_price'] = this.discPrice;
     data['slug'] = this.slug;
+    data['stock'] = this.stock;
     data['short_discription'] = this.shortDiscription;
+    data['product_id'] = this.product_id;
     data['image'] = this.image;
     data['images'] = this.images;
     return data;

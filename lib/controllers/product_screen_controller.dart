@@ -8,6 +8,7 @@ import '../api/api_provider.dart';
 import '../api/web_api_constant.dart';
 import '../models/ProductApiResponseModel.dart';
 // import '../models/ProductResponseApi.dart';
+import '../models/ProductDetailsApiResponseModel.dart';
 import '../utils/app_shared_preferences.dart';
 import '../utils/comming_soon_dialog.dart';
 
@@ -32,7 +33,7 @@ class ProductScreenController extends GetxController{
   // RxBool kycStatus = true.obs;
   RxString userName = "".obs;
   // RxInt cartIteam = 0.obs;
-  RxList<Product> product = <Product>[].obs;
+  RxList<ProductDetailsResponseData> product = <ProductDetailsResponseData>[].obs;
   RxBool isloading = true.obs;
 
 
@@ -48,9 +49,10 @@ class ProductScreenController extends GetxController{
       if (response != null) {
         if (response.error != true && response.errorCode == 0) {
           if (response.data != null) {
-            product.value = response.data ?? [];
+            // product.value = response.data ?? [];
+            product.value = (response.data as List).cast<ProductDetailsResponseData>();
             if(product.value!.isEmpty){
-              isloading.value=false;
+              isloading.value = false;
             }
             // cartIteam.value = response.cart_item!;
            }else{

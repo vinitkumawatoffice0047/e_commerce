@@ -56,36 +56,36 @@ class AddToCartScreenController extends GetxController{
   });
   }
 
-  Future<void> productDetails(BuildContext context, String slug) async{
-    Map<String, dynamic> dict = {
-      "slug":slug,
-    };
-    try {
-      ConsoleLog.printColor("UserToken...$userAccessToken...", color: "yellow");
-      var response = await ApiProvider().productDetailsAPI(
-          context, WebApiConstant.API_URL_HOME_PRODUCT_DETAILS, dict, "");
-
-      ConsoleLog.printColor("Response.....$response", color: "green");
-      if (response != null) {
-        if (response.error != true && response.errorCode == 0) {
-          if (response.data?.images != null) {
-            banner.value = response.data?.images ?? [];
-          }
-
-        } else {
-          Fluttertoast.showToast(msg: response.message ?? "");
-        }
-        product_id.value=response.data?.id! ??0 ;
-        title.value=response.data?.title! ??"" ;
-        price.value= response.data?.price!.toString() ??"" ;
-        disc_price.value=response.data?.discPrice!.toString() ?? "" ;
-        description.value=response.data?.discription! ?? "" ;
-      }
-    } catch (e) {
-      ConsoleLog.printError("Exception...$e...");
-      Fluttertoast.showToast(msg: WebApiConstant.ApiError);
-    }
-  }
+  // Future<void> productDetails(BuildContext context, String slug) async{
+  //   Map<String, dynamic> dict = {
+  //     "slug":slug,
+  //   };
+  //   try {
+  //     ConsoleLog.printColor("UserToken...$userAccessToken...", color: "yellow");
+  //     var response = await ApiProvider().productDetailsAPI(
+  //         context, WebApiConstant.API_URL_HOME_PRODUCT_DETAILS, dict, "");
+  //
+  //     ConsoleLog.printColor("Response.....$response", color: "green");
+  //     if (response != null) {
+  //       if (response.error != true && response.errorCode == 0) {
+  //         if (response.data?.images != null) {
+  //           banner.value = response.data?.images ?? [];
+  //         }
+  //
+  //       } else {
+  //         Fluttertoast.showToast(msg: response.message ?? "");
+  //       }
+  //       product_id.value=response.data?.id! ??0 ;
+  //       title.value=response.data?.title! ??"" ;
+  //       price.value= response.data?.price!.toString() ??"" ;
+  //       disc_price.value=response.data?.discPrice!.toString() ?? "" ;
+  //       description.value=response.data?.discription! ?? "" ;
+  //     }
+  //   } catch (e) {
+  //     ConsoleLog.printError("Exception...$e...");
+  //     Fluttertoast.showToast(msg: WebApiConstant.ApiError);
+  //   }
+  // }
 
   Future<void> getCartList(BuildContext context,) async{
 
@@ -178,15 +178,15 @@ class AddToCartScreenController extends GetxController{
     }
   }
 
-  Future<void> getToken(BuildContext context, String slug) async {
-    await AppSharedPreferences().getBool(AppSharedPreferences.isLogin).then((value){
-      isLogined.value = value;
-    });
-    await AppSharedPreferences().getString(AppSharedPreferences.token).then((value){
-      userAccessToken = value;
-      productDetails(context,slug);
-    });
-  }
+  // Future<void> getToken(BuildContext context, String slug) async {
+  //   await AppSharedPreferences().getBool(AppSharedPreferences.isLogin).then((value){
+  //     isLogined.value = value;
+  //   });
+  //   await AppSharedPreferences().getString(AppSharedPreferences.token).then((value){
+  //     userAccessToken = value;
+  //     productDetails(context,slug);
+  //   });
+  // }
 
   Future<void> buyNow(BuildContext context,String address,String pinCode,deliver,String amount) async{
     Map<String, dynamic> dict = {

@@ -1,8 +1,11 @@
+import 'package:e_commerce_app/models/ProductDetailsApiResponseModel.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/cart_controller.dart';
+import '../models/HomeDetailsApiResponseModel.dart';
 import '../models/product_model.dart';
 import '../utils/global_utils.dart';
+import '../view/product_detail_screen.dart';
 
 // =====================================================
 // REUSABLE PRODUCT GRID WIDGET
@@ -90,6 +93,7 @@ class ReusableProductList extends StatelessWidget {
 // PRODUCT CARD (Grid Item)
 // =====================================================
 class ProductCard extends StatelessWidget {
+  // final dynamic product;
   final dynamic product;
   final bool isDark;
 
@@ -101,89 +105,94 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final CartController cartController = Get.find<CartController>();
+    final CartController cartController = Get.put(CartController());
 
     return IntrinsicHeight(
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? Color(0xff2a2a2a) : Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: isDark ? Color(0xff3a3a3a) : Color(0xfff0f0f0),
+      child: InkWell(
+        onTap: () {
+          Get.to(() => ProductDetailScreen(slug: product.slug ?? ""));
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? Color(0xff2a2a2a) : Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: isDark ? Color(0xff3a3a3a) : Color(0xfff0f0f0),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: Offset(0, 5),
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Product Image
-            Container(
-              height: 125,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(15),
-                  topRight: Radius.circular(15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Product Image
+              Container(
+                height: 125,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15),
+                  ),
+                ),
+                padding: EdgeInsets.all(20),
+                child: Center(
+                  child: getProductImage(product),
                 ),
               ),
-              padding: EdgeInsets.all(20),
-              child: Center(
-                child: getProductImage(product),
-              ),
-            ),
 
-            // Product Details
-            Flexible(
-              fit: FlexFit.loose,
-              child: Padding(
-                padding: EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Product Title
-                    Text(
-                      getProductTitle(product),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: isDark ? Colors.white : Colors.black87,
+              // Product Details
+              Flexible(
+                fit: FlexFit.loose,
+                child: Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Product Title
+                      Text(
+                        getProductTitle(product),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 5),
+                      SizedBox(height: 5),
 
-                    // Product Description
-                    Text(
-                      getProductDescription(product),
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      // Product Description
+                      Text(
+                        getProductDescription(product),
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
 
-                    Spacer(),
+                      Spacer(),
 
-                    // Price and Cart Controls
-                    buildPriceAndCartSection(product, cartController, isDark),
-                  ],
+                      // Price and Cart Controls
+                      buildPriceAndCartSection(product, cartController, isDark),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget buildPriceAndCartSection(dynamic product, CartController cartController, bool isDark) {
+  Widget buildPriceAndCartSection(/*dynamic product,*/ProductDetailsResponseData product, CartController cartController, bool isDark) {
     return Column(
       children: [
         // Prices
@@ -218,10 +227,11 @@ class ProductCard extends StatelessWidget {
           final productId = getProductId(product);
           final quantity = cartController.getProductQuantity(productId);
           final isInCart = quantity > 0;
+          final stock = product.stock ?? 0;
 
           return isInCart
               ? buildQuantityControls(productId, quantity, cartController, isDark)
-              : buildAddButton(product, cartController);
+              : stock > 0 ? buildAddButton(product, cartController) : buildOutOfStockButtonButton(product, cartController);
         }),
       ],
     );
@@ -278,7 +288,7 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget buildAddButton(dynamic product, CartController cartController) {
+  Widget buildAddButton(/*dynamic product,*/ProductDetailsResponseData product, CartController cartController) {
     return GlobalUtils.CustomButton(
       height: 40,
       onPressed: () {
@@ -294,13 +304,28 @@ class ProductCard extends StatelessWidget {
       animation: ButtonAnimation.scale,
     );
   }
+
+  Widget buildOutOfStockButtonButton(/*dynamic product,*/ProductDetailsResponseData product, CartController cartController) {
+    return GlobalUtils.CustomButton(
+      height: 40,
+      onPressed: null,
+      child: const Text("Out of Stock", style: TextStyle(color: Colors.white),),
+      iconColor: Colors.white,
+      backgroundColor: Colors.grey,
+      borderRadius: 8,
+      padding: const EdgeInsets.all(6),
+      showBorder: false,
+      animation: ButtonAnimation.scale,
+    );
+  }
 }
 
 // =====================================================
 // PRODUCT LIST ITEM (For Search Screen)
 // =====================================================
 class ProductListItem extends StatelessWidget {
-  final dynamic product;
+  // final dynamic product;
+  final ProductDetailsResponseData product;
   final bool isDark;
 
   const ProductListItem({
@@ -1035,44 +1060,85 @@ class EmptyCartWidget extends StatelessWidget {
 
 
 
+// Widget getProductImage(dynamic product) {
 Widget getProductImage(dynamic product) {
-  if (product is ProductItem) {
-    return product.image.isNotEmpty
-        ? Image.network(product.image, fit: BoxFit.contain)
+  // Handle TopSelling type (from HomeScreen)
+  if (product is TopSelling) {
+    return product.images != null && product.images!.isNotEmpty
+        ? Image.network(product.images!.first, fit: BoxFit.contain)
         : Image.asset("assets/images/noImageIcon.png");
   }
 
-  // Fallback for other product types
-  final images = product.images;
-  if (images != null && images.isNotEmpty) {
-    return Image.network(images.first.toString(), fit: BoxFit.contain);
+  // Handle ProductDetailsResponseData type
+  if (product is ProductDetailsResponseData) {
+    final images = product.images;
+    if (images != null && images.isNotEmpty) {
+      return Image.network(images.first.toString(), fit: BoxFit.contain);
+    }
+    return Image.asset("assets/images/noImageIcon.png");
   }
+
+  // Handle ProductItem type (for cart)
+  if (product is ProductItem) {
+    return product.image!.isNotEmpty
+        ? Image.network(product.image ?? "", fit: BoxFit.contain)
+        : Image.asset("assets/images/noImageIcon.png");
+  }
+
+  // Fallback
   return Image.asset("assets/images/noImageIcon.png");
 }
 
-String getProductTitle(dynamic product) {
+// String getProductTitle(dynamic product) {
+String getProductTitle(ProductDetailsResponseData product) {
   if (product is ProductItem) return product.title ?? '';
   return product.title?.toString() ?? '';
 }
 
-String getProductDescription(dynamic product) {
-  if (product is ProductItem) return product.discription ?? '';
-  return product.discription?.toString() ?? product.slug?.toString() ?? '';
+// String getProductDescription(dynamic product) {
+String getProductDescription(dynamic  product) {
+  if (product is TopSelling) return product.title ?? '';
+  if (product is ProductDetailsResponseData) return product.title?.toString() ?? '';
+  if (product is ProductItem) return product.title ?? '';
+  return '';
 }
 
+// String getProductId(dynamic product) {
 String getProductId(dynamic product) {
+  if (product is TopSelling) return product.product_id?.toString() ?? '';
+  if (product is ProductDetailsResponseData) return product.product_id?.toString() ?? '';
   if (product is ProductItem) return product.productId;
-  return product.product_id?.toString() ?? '';
+  return '';
 }
 
+// dynamic getDiscountPrice(dynamic product) {
 dynamic getDiscountPrice(dynamic product) {
+  if (product is TopSelling) return product.discPrice ?? product.price ?? 0;
+  if (product is ProductDetailsResponseData) return product.discPrice ?? product.price ?? 0;
   if (product is ProductItem) return product.sellPrice ?? 0;
-  return product.discPrice ?? product.sellPrice ?? 0;
+  return 0;
 }
 
+// dynamic getOriginalPrice(dynamic product) {
 dynamic getOriginalPrice(dynamic product) {
+  if (product is TopSelling) return product.price ?? 0;
+  if (product is ProductDetailsResponseData) return product.price ?? 0;
   if (product is ProductItem) return product.price ?? 0;
-  return product.price ?? 0;
+  return 0;
+}
+
+int getProductStock(dynamic product) {
+  if (product is TopSelling) return product.stock ?? 0;
+  if (product is ProductDetailsResponseData) return product.stock ?? 0;
+  if (product is ProductItem) return 99; // Cart items typically don't have stock
+  return 0;
+}
+
+String getProductSlug(dynamic product) {
+  if (product is TopSelling) return product.slug ?? "";
+  if (product is ProductDetailsResponseData) return product.slug ?? "";
+  if (product is ProductItem) return "";
+  return "";
 }
 
 ProductItem createCartItem(dynamic product) {
@@ -1080,10 +1146,8 @@ ProductItem createCartItem(dynamic product) {
 
   return ProductItem(
     productId: getProductId(product),
-    image: product.images != null && product.images!.isNotEmpty
-        ? product.images!.first
-        : '',
-    images: product.images,
+    image: getProductImageUrl(product),
+    images: getProductImages(product),
     title: getProductTitle(product),
     discription: getProductDescription(product),
     price: getOriginalPrice(product) ?? 0,
@@ -1091,3 +1155,40 @@ ProductItem createCartItem(dynamic product) {
     qty: 1,
   );
 }
+
+String getProductImageUrl(dynamic product) {
+  if (product is TopSelling) {
+    return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
+  }
+  if (product is ProductDetailsResponseData) {
+    return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
+  }
+  if (product is ProductItem) {
+    return product.image ?? '';
+  }
+  return '';
+}
+
+List<String>? getProductImages(dynamic product) {
+  if (product is TopSelling) return product.images;
+  if (product is ProductDetailsResponseData) return product.images;
+  if (product is ProductItem) return product.images;
+  return null;
+}
+
+// // ProductItem createCartItem(dynamic product) {
+// dynamic createCartItem(ProductDetailsResponseData product) {
+//   if (product is ProductItem) return product;
+//   return ProductItem(
+//     productId: getProductId(product),
+//     image: product.images != null && product.images!.isNotEmpty
+//         ? product.images!.first
+//         : '',
+//     images: product.images,
+//     title: getProductTitle(product),
+//     discription: getProductDescription(product),
+//     price: getOriginalPrice(product) ?? 0,
+//     sellPrice: getDiscountPrice(product) ?? 0,
+//     qty: 1,
+//   );
+// }

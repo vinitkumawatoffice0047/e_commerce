@@ -5,6 +5,8 @@ import 'package:e_commerce_app/api/web_api_constant.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../api/api_provider.dart';
+import '../models/ProductApiResponseModel.dart';
+import '../models/ProductDetailsApiResponseModel.dart';
 import '../models/product_model.dart';
 import '../utils/ConsoleLog.dart';
 import '../utils/app_shared_preferences.dart';
@@ -15,8 +17,8 @@ class SearchScreenController extends GetxController {
   final TextEditingController searchTxtController = TextEditingController();
 
   // Search Results
-  final RxList<ProductItem> searchResults = <ProductItem>[].obs;
-  final RxList<ProductItem> allSearchResults = <ProductItem>[].obs;
+  final RxList<ProductDetailsResponseData> searchResults = <ProductDetailsResponseData>[].obs;
+  final RxList<ProductDetailsResponseData> allSearchResults = <ProductDetailsResponseData>[].obs;
 
   // Loading & Error States
   final RxBool isLoading = false.obs;
@@ -133,15 +135,16 @@ class SearchScreenController extends GetxController {
         allSearchResults.value = response.data
             ?.map((item) {
           try {
-            return ProductItem(
-              productId: item.productId?.toString() ?? '',
+            return Product(
+              product_id: item.productId?.toString() ?? '',
               title: item.title ?? '',
               discription: item.description?.toString() ?? '',
-              image: item.image ?? '',
+              // image: item.image ?? '',
               images: item.image != null ? [item.image!] : [],
               price: item.price ?? 0,
-              sellPrice: item.discPrice ?? 0,
-              qty: 1,
+              discPrice: item.discPrice ?? 0,
+              slug: item.slug ?? '',
+              // qty: 1,
             );
           } catch (e) {
             ConsoleLog.printError("Error converting item: $e");
@@ -149,7 +152,7 @@ class SearchScreenController extends GetxController {
           }
         })
             .where((item) => item != null)
-            .cast<ProductItem>()
+            .cast<ProductDetailsResponseData>()
             .toList() ?? [];
 
         // Load first page
