@@ -94,10 +94,10 @@ class ReusableProductList extends StatelessWidget {
 // =====================================================
 class ProductCard extends StatelessWidget {
   // final dynamic product;
-  final dynamic product;
+  dynamic product;
   final bool isDark;
 
-  const ProductCard({
+  ProductCard({
     super.key,
     required this.product,
     required this.isDark,
@@ -110,7 +110,8 @@ class ProductCard extends StatelessWidget {
     return IntrinsicHeight(
       child: InkWell(
         onTap: () {
-          Get.to(() => ProductDetailScreen(slug: product.slug ?? ""));
+          String slug = getProductSlug(product);
+          Get.to(() => ProductDetailScreen(slug: slug));
         },
         child: Container(
           decoration: BoxDecoration(
@@ -129,6 +130,7 @@ class ProductCard extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Product Image
               Container(
@@ -148,8 +150,8 @@ class ProductCard extends StatelessWidget {
               ),
 
               // Product Details
-              Flexible(
-                fit: FlexFit.loose,
+              Expanded(
+                // fit: FlexFit.loose,
                 child: Padding(
                   padding: EdgeInsets.all(10),
                   child: Column(
@@ -178,9 +180,11 @@ class ProductCard extends StatelessWidget {
                       ),
 
                       Spacer(),
+                      // SizedBox(height: 8),
 
-                      // Price and Cart Controls
                       buildPriceAndCartSection(product, cartController, isDark),
+                      // Price and Cart Controls
+                      // buildPriceAndCartSection(product, cartController, isDark),
                     ],
                   ),
                 ),
@@ -192,7 +196,7 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget buildPriceAndCartSection(/*dynamic product,*/ProductDetailsResponseData product, CartController cartController, bool isDark) {
+  Widget buildPriceAndCartSection(/*dynamic product,*/dynamic product, CartController cartController, bool isDark) {
     return Column(
       children: [
         // Prices
@@ -288,7 +292,7 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget buildAddButton(/*dynamic product,*/ProductDetailsResponseData product, CartController cartController) {
+  Widget buildAddButton(/*dynamic product,*/dynamic product, CartController cartController) {
     return GlobalUtils.CustomButton(
       height: 40,
       onPressed: () {
@@ -305,7 +309,7 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget buildOutOfStockButtonButton(/*dynamic product,*/ProductDetailsResponseData product, CartController cartController) {
+  Widget buildOutOfStockButtonButton(/*dynamic product,*/dynamic product, CartController cartController) {
     return GlobalUtils.CustomButton(
       height: 40,
       onPressed: null,
@@ -324,8 +328,8 @@ class ProductCard extends StatelessWidget {
 // PRODUCT LIST ITEM (For Search Screen)
 // =====================================================
 class ProductListItem extends StatelessWidget {
-  // final dynamic product;
-  final ProductDetailsResponseData product;
+  final dynamic product;
+  // final ProductDetailsResponseData product;
   final bool isDark;
 
   const ProductListItem({
@@ -1062,44 +1066,42 @@ class EmptyCartWidget extends StatelessWidget {
 
 // Widget getProductImage(dynamic product) {
 Widget getProductImage(dynamic product) {
-  // Handle TopSelling type (from HomeScreen)
   if (product is TopSelling) {
     return product.images != null && product.images!.isNotEmpty
-        ? Image.network(product.images!.first, fit: BoxFit.contain)
+        ? Image.network(product.images!.first, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
         : Image.asset("assets/images/noImageIcon.png");
   }
 
-  // Handle ProductDetailsResponseData type
   if (product is ProductDetailsResponseData) {
     final images = product.images;
     if (images != null && images.isNotEmpty) {
-      return Image.network(images.first.toString(), fit: BoxFit.contain);
+      return Image.network(images.first.toString(), fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"));
     }
     return Image.asset("assets/images/noImageIcon.png");
   }
 
-  // Handle ProductItem type (for cart)
   if (product is ProductItem) {
-    return product.image!.isNotEmpty
-        ? Image.network(product.image ?? "", fit: BoxFit.contain)
+    return product.image != null && product.image!.isNotEmpty
+        ? Image.network(product.image!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
         : Image.asset("assets/images/noImageIcon.png");
   }
 
-  // Fallback
   return Image.asset("assets/images/noImageIcon.png");
 }
 
 // String getProductTitle(dynamic product) {
-String getProductTitle(ProductDetailsResponseData product) {
-  if (product is ProductItem) return product.title ?? '';
-  return product.title?.toString() ?? '';
-}
-
-// String getProductDescription(dynamic product) {
-String getProductDescription(dynamic  product) {
+String getProductTitle(dynamic product) {
   if (product is TopSelling) return product.title ?? '';
   if (product is ProductDetailsResponseData) return product.title?.toString() ?? '';
   if (product is ProductItem) return product.title ?? '';
+  return '';
+}
+
+// String getProductDescription(dynamic product) {
+String getProductDescription(dynamic product) {
+  if (product is TopSelling) return product.discription ?? product.title ?? '';
+  if (product is ProductDetailsResponseData) return product.discription?.toString() ?? product.title?.toString() ?? '';
+  if (product is ProductItem) return product.discription ?? '';
   return '';
 }
 
@@ -1111,7 +1113,6 @@ String getProductId(dynamic product) {
   return '';
 }
 
-// dynamic getDiscountPrice(dynamic product) {
 dynamic getDiscountPrice(dynamic product) {
   if (product is TopSelling) return product.discPrice ?? product.price ?? 0;
   if (product is ProductDetailsResponseData) return product.discPrice ?? product.price ?? 0;
@@ -1119,7 +1120,6 @@ dynamic getDiscountPrice(dynamic product) {
   return 0;
 }
 
-// dynamic getOriginalPrice(dynamic product) {
 dynamic getOriginalPrice(dynamic product) {
   if (product is TopSelling) return product.price ?? 0;
   if (product is ProductDetailsResponseData) return product.price ?? 0;
@@ -1130,7 +1130,7 @@ dynamic getOriginalPrice(dynamic product) {
 int getProductStock(dynamic product) {
   if (product is TopSelling) return product.stock ?? 0;
   if (product is ProductDetailsResponseData) return product.stock ?? 0;
-  if (product is ProductItem) return 99; // Cart items typically don't have stock
+  if (product is ProductItem) return 99;
   return 0;
 }
 
@@ -1139,21 +1139,6 @@ String getProductSlug(dynamic product) {
   if (product is ProductDetailsResponseData) return product.slug ?? "";
   if (product is ProductItem) return "";
   return "";
-}
-
-ProductItem createCartItem(dynamic product) {
-  if (product is ProductItem) return product;
-
-  return ProductItem(
-    productId: getProductId(product),
-    image: getProductImageUrl(product),
-    images: getProductImages(product),
-    title: getProductTitle(product),
-    discription: getProductDescription(product),
-    price: getOriginalPrice(product) ?? 0,
-    sellPrice: getDiscountPrice(product) ?? 0,
-    qty: 1,
-  );
 }
 
 String getProductImageUrl(dynamic product) {
@@ -1176,19 +1161,21 @@ List<String>? getProductImages(dynamic product) {
   return null;
 }
 
-// // ProductItem createCartItem(dynamic product) {
-// dynamic createCartItem(ProductDetailsResponseData product) {
-//   if (product is ProductItem) return product;
-//   return ProductItem(
-//     productId: getProductId(product),
-//     image: product.images != null && product.images!.isNotEmpty
-//         ? product.images!.first
-//         : '',
-//     images: product.images,
-//     title: getProductTitle(product),
-//     discription: getProductDescription(product),
-//     price: getOriginalPrice(product) ?? 0,
-//     sellPrice: getDiscountPrice(product) ?? 0,
-//     qty: 1,
-//   );
-// }
+ProductItem createCartItem(dynamic product) {
+  if (product is ProductItem) return product;
+
+  return ProductItem(
+    productId: getProductId(product),
+    image: getProductImageUrl(product),
+    images: getProductImages(product),
+    title: getProductTitle(product),
+    discription: getProductDescription(product),
+    price: getOriginalPrice(product) is String
+        ? double.tryParse(getOriginalPrice(product).toString()) ?? 0
+        : getOriginalPrice(product) ?? 0,
+    sellPrice: getDiscountPrice(product) is String
+        ? double.tryParse(getDiscountPrice(product).toString()) ?? 0
+        : getDiscountPrice(product) ?? 0,
+    qty: 1,
+  );
+}

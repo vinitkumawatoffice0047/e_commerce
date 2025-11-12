@@ -3,7 +3,7 @@ class ProductDetailsResponseModel {
   String? message;
   int? errorCode;
   String? state;
-  ProductDetailsResponseData? data;
+  dynamic data;
 
   ProductDetailsResponseModel(
       {this.error, this.message, this.errorCode, this.state, this.data});
@@ -13,7 +13,17 @@ class ProductDetailsResponseModel {
     message = json['message'];
     errorCode = json['errorCode'];
     state = json['state'];
-    data = json['data'] != null ? new ProductDetailsResponseData.fromJson(json['data']) : null;
+    // data = json['data'] != null ? new ProductDetailsResponseData.fromJson(json['data']) : null;
+    // agar data list hai to assign karo directly
+    if (json['data'] is List) {
+      data = (json['data'] as List).map((e) => ProductDetailsResponseData.fromJson(e)).toList();
+    }
+    // agar data map hai to single object parse karo
+    else if (json['data'] is Map) {
+      data = ProductDetailsResponseData.fromJson(json['data']);
+    } else {
+      data = null;
+    }
   }
 
   Map<String, dynamic> toJson() {

@@ -33,6 +33,7 @@ class ProductScreenController extends GetxController{
   // RxBool kycStatus = true.obs;
   RxString userName = "".obs;
   // RxInt cartIteam = 0.obs;
+  // RxList<ProductDetailsResponseData> product = <ProductDetailsResponseData>[].obs;
   RxList<ProductDetailsResponseData> product = <ProductDetailsResponseData>[].obs;
   RxBool isloading = true.obs;
 
