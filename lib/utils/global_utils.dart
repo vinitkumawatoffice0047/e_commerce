@@ -107,7 +107,7 @@ class GlobalUtils {
     required String message,
     SnackbarType type = SnackbarType.info,
     Duration? duration,
-    SnackPosition position = SnackPosition.BOTTOM,
+    SnackPosition position = SnackPosition.TOP,
     Widget? icon,
   }) {
     Color backgroundColor;
@@ -142,7 +142,10 @@ class GlobalUtils {
       duration: duration ?? Duration(seconds: 3),
       margin: EdgeInsets.all(10),
       borderRadius: 10,
-      icon: icon ?? Icon(defaultIcon, color: Colors.white),
+      icon: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: icon ?? Icon(defaultIcon, color: Colors.white),
+      ),
       isDismissible: true,
       dismissDirection: DismissDirection.horizontal,
     );

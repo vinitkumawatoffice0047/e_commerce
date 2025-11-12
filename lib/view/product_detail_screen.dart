@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/product_detail_controller.dart';
+import '../controllers/wishlist_controller.dart';
 import '../models/ProductDetailsApiResponseModel.dart';
 import '../models/product_model.dart';
 import '../utils/global_utils.dart';
@@ -22,7 +25,8 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final ProductDetailController controller = Get.put(ProductDetailController());
-  final CartController cartController = Get.find<CartController>();
+  final CartController cartController = Get.put(CartController());
+  final WishlistController wishlistController = Get.put(WishlistController());
   int _currentImageIndex = 0;
 
   @override
@@ -69,14 +73,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
         return CustomScrollView(
           slivers: [
-            _buildAppBar(isDark, product),
+            buildAppBar(isDark, product),
             SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildImageCarousel(product),
-                  _buildProductInfo(isDark, product),
-                  buildSpecifications(isDark, product),
+                  buildImageCarousel(product),
+                  buildProductInfo(isDark, product),
+                  // buildSpecifications(isDark, product),
                   buildDescription(isDark, product),
                   const SizedBox(height: 100),
                 ],
@@ -89,7 +93,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildAppBar(bool isDark, ProductDetailsResponseData product) {
+  Widget buildAppBar(bool isDark, ProductDetailsResponseData product) {
     return SliverAppBar(
       expandedHeight: 400,
       pinned: true,
@@ -115,13 +119,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             child: const Icon(Icons.share, color: Colors.black),
           ),
-          onPressed: () {
-            // Share functionality
-            GlobalUtils.showSnackbar(
-              title: 'Share',
-              message: 'Share functionality coming soon!',
-            );
-          },
+          onPressed: () => shareProduct(product),
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -155,7 +153,41 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildImageCarousel(ProductDetailsResponseData product) {
+  // Share Product Function
+  Future<void> shareProduct(ProductDetailsResponseData product) async {
+    try {
+      final String shareText = '''
+🛍️ Check out this amazing product!
+
+${product.title ?? 'Product'}
+
+💰 Price: ₹${product.discPrice ?? product.price}
+${product.price != product.discPrice ? '🏷️ Original Price: ₹${product.price} (${calculateDiscountPercentage(product.price, product.discPrice)}% OFF)' : ''}
+
+${product.shortDiscription ?? ''}
+
+Shop now on our app!
+      ''';
+
+      // Share with text only (you can add deep link URL here if available)
+      await Share.share(
+        shareText,
+        subject: product.title ?? 'Check out this product',
+      );
+
+      GlobalUtils.showSnackbar(
+        title: 'Shared',
+        message: 'Product shared successfully!',
+      );
+    } catch (e) {
+      GlobalUtils.showSnackbar(
+        title: 'Error',
+        message: 'Failed to share product',
+      );
+    }
+  }
+
+  Widget buildImageCarousel(ProductDetailsResponseData product) {
     if (product.images == null || product.images!.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -183,7 +215,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildProductInfo(bool isDark, ProductDetailsResponseData product) {
+  Widget buildProductInfo(bool isDark, ProductDetailsResponseData product) {
     final stock = product.stock ?? 0;
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -489,8 +521,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               image: product.images?.isNotEmpty == true ? product.images!.first : '',
                               title: product.title.toString() ?? '',
                               discription: product.discription.toString() ?? '',
-                              price: product.price ?? 0,
-                              sellPrice: product.discPrice ?? product.price ?? 0,
+                              price: parseToDouble(product.price),
+                              sellPrice: parseToDouble(product.discPrice ?? product.price),
                               qty: 1,
                             );
                             cartController.addToCart(cartItem);
@@ -509,25 +541,54 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                 ),
               const SizedBox(width: 15),
-              GlobalUtils.CustomButton(
-                height: 55,
-                onPressed: () {
-                  // Wishlist functionality
-                  GlobalUtils.showSnackbar(
-                    title: 'Wishlist',
-                    message: 'Wishlist feature coming soon!',
-                  );
-                },
-                child: const Center(child: Icon(Icons.favorite_border, color: Colors.white)),
-                backgroundColor: Colors.red.shade400,
-                borderRadius: 15,
-                showShadow: true,
-                animation: ButtonAnimation.scale,
-              ),
+              // Wishlist Button with Animation
+              Obx(() {
+                final isInWishlist = wishlistController.isInWishlist(productId);
+
+                return GlobalUtils.CustomButton(
+                  height: 55,
+                  width: 55,
+                  onPressed: () {
+                    if (isInWishlist) {
+                      wishlistController.removeFromWishlist(productId);
+                      GlobalUtils.showSnackbar(
+                        title: 'Removed',
+                        message: 'Removed from wishlist',
+                      );
+                    } else {
+                      wishlistController.addToWishlist(productId);
+                      GlobalUtils.showSnackbar(
+                        title: 'Added',
+                        message: 'Added to wishlist',
+                      );
+                      // Haptic feedback
+                      HapticFeedback.mediumImpact();
+                    }
+                  },
+                  child: Center(
+                    child: Icon(
+                      isInWishlist ? Icons.favorite : Icons.favorite_border,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: isInWishlist ? Colors.red.shade600 : Colors.red.shade400,
+                  borderRadius: 15,
+                  showShadow: true,
+                  animation: ButtonAnimation.scale,
+                );
+              }),
             ],
           ),
         ),
       );
     });
+  }
+
+  double parseToDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 }

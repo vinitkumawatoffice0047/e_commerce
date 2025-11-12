@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:e_commerce_app/utils/global_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -176,16 +177,18 @@ class CartController extends GetxController {
     updateCartCount();
     saveCartToPreferences();
 
-    Get.snackbar(
-      'Added to Cart',
+    GlobalUtils.showSnackbar(
+      title: 'Added to Cart',
       // '${product['name']} added successfully',
-      '${product.title} added successfully',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Color(0xff80a8ff),
-      colorText: Colors.white,
+      message: '${product.title} added successfully',
+      position: SnackPosition.TOP,
       duration: Duration(seconds: 2),
-      margin: EdgeInsets.all(10),
-      borderRadius: 10,
+      icon: Image.network(product.images!.first.toString())
+      // backgroundColor: Color(0xff80a8ff),
+      // colorText: Colors.white,
+      // duration: Duration(seconds: 2),
+      // margin: EdgeInsets.all(10),
+      // borderRadius: 10,
     );
 
     // Yaha Add to Cart API call karein

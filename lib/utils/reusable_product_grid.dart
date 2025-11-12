@@ -150,8 +150,8 @@ class ProductCard extends StatelessWidget {
               ),
 
               // Product Details
-              Expanded(
-                // fit: FlexFit.loose,
+              Flexible(
+                fit: FlexFit.loose,
                 child: Padding(
                   padding: EdgeInsets.all(10),
                   child: Column(
@@ -231,11 +231,13 @@ class ProductCard extends StatelessWidget {
           final productId = getProductId(product);
           final quantity = cartController.getProductQuantity(productId);
           final isInCart = quantity > 0;
-          final stock = product.stock ?? 0;
+          final stock = getProductStock(product);
 
           return isInCart
               ? buildQuantityControls(productId, quantity, cartController, isDark)
-              : stock > 0 ? buildAddButton(product, cartController) : buildOutOfStockButtonButton(product, cartController);
+              : stock > 0
+              ? buildAddButton(product, cartController)
+              : buildOutOfStockButton();
         }),
       ],
     );
@@ -253,9 +255,7 @@ class ProductCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GlobalUtils.CustomButton(
-            onPressed: () {
-              cartController.updateQuantity(productId, quantity - 1);
-            },
+            onPressed: () => cartController.updateQuantity(productId, quantity - 1),
             icon: Icon(Icons.remove, size: 25),
             iconColor: Color(0xff80a8ff),
             backgroundColor: Colors.transparent,
@@ -264,21 +264,16 @@ class ProductCard extends StatelessWidget {
             animation: ButtonAnimation.scale,
             padding: EdgeInsets.all(4),
           ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              '$quantity',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
+          Text(
+            '$quantity',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
           GlobalUtils.CustomButton(
-            onPressed: () {
-              cartController.updateQuantity(productId, quantity + 1);
-            },
+            onPressed: () => cartController.updateQuantity(productId, quantity + 1),
             icon: Icon(Icons.add, size: 25),
             iconColor: Color(0xff80a8ff),
             backgroundColor: Colors.transparent,
@@ -309,7 +304,7 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget buildOutOfStockButtonButton(/*dynamic product,*/dynamic product, CartController cartController) {
+  Widget buildOutOfStockButton() {
     return GlobalUtils.CustomButton(
       height: 40,
       onPressed: null,
@@ -340,152 +335,315 @@ class ProductListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final CartController cartController = Get.find<CartController>();
+    final CartController cartController = Get.put(CartController());
 
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? Color(0xff2a2a2a) : Color(0xfff5f5f5),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        children: [
-          // Product Image
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      onTap: () {
+        String slug = getProductSlug(product);
+        if (slug.isNotEmpty) {
+          Get.to(() => ProductDetailScreen(slug: slug));
+        }
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? Color(0xff2a2a2a) : Color(0xfff5f5f5),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Row(
+          children: [
+            // Product Image
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: getProductImage(product),
+              ),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: getProductImage(product),
-            ),
-          ),
-          SizedBox(width: 15),
+            SizedBox(width: 15),
 
-          // Product Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  getProductTitle(product),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: isDark ? Colors.white : Colors.black87,
+            // Product Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    getProductTitle(product),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 5),
-                Text(
-                  getProductDescription(product),
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 5),
-                Row(
-                  children: [
-                    Text(
-                      '₹${getDiscountPrice(product)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Color(0xff80a8ff),
+                  SizedBox(height: 5),
+                  Text(
+                    getProductDescription(product),
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Text(
+                        '₹${getDiscountPrice(product)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Color(0xff80a8ff),
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 5),
-                    Text(
-                      '₹${getOriginalPrice(product)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: Colors.grey,
-                        decoration: TextDecoration.lineThrough,
+                      SizedBox(width: 5),
+                      Text(
+                        '₹${getOriginalPrice(product)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: Colors.grey,
+                          decoration: TextDecoration.lineThrough,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Add/Quantity Controls
-          Obx(() {
-            final _ = cartController.cartItems.length;
-            final productId = getProductId(product);
-            final quantity = cartController.getProductQuantity(productId);
-            final isInCart = quantity > 0;
+            // Fixed: Add/Quantity Controls with proper sizing
+            SizedBox(
+              width: 100,
+              child: Obx(() {
+                final _ = cartController.cartItems.length;
+                final productId = getProductId(product);
+                final quantity = cartController.getProductQuantity(productId);
+                final isInCart = quantity > 0;
+                final stock = getProductStock(product);
 
-            return isInCart
-                ? Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xff80a8ff).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+                return isInCart
+                    ? Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Color(0xff80a8ff).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                        onPressed: () => cartController.updateQuantity(productId, quantity - 1),
+                        icon: Icon(Icons.remove, size: 18),
+                        color: Color(0xff80a8ff),
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(),
+                      ),
+                      Text(
+                        '$quantity',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => cartController.updateQuantity(productId, quantity + 1),
+                        icon: Icon(Icons.add, size: 18),
+                        color: Color(0xff80a8ff),
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                )
+                    : stock > 0
+                    ? GlobalUtils.CustomButton(
+                  height: 40,
+                  onPressed: () {
+                    final cartItem = createCartItem(product);
+                    cartController.addToCart(cartItem);
+                  },
+                  text: 'ADD',
+                  textColor: Colors.white,
+                  backgroundColor: Color(0xff80a8ff),
+                  borderRadius: 10,
+                  showBorder: false,
+                  animation: ButtonAnimation.scale,
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                )
+                    : Container(
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.grey,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'Out of Stock',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        GlobalUtils.CustomButton(
-                          onPressed: () {
-                            cartController.updateQuantity(productId, quantity - 1);
-                          },
-                          icon: Icon(Icons.remove, size: 20),
-                          iconColor: Color(0xff80a8ff),
-                          backgroundColor: Colors.transparent,
-                          showBorder: false,
-                          showShadow: false,
-                          animation: ButtonAnimation.scale,
-                          padding: EdgeInsets.all(4),
-                        ),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            '$quantity',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                        ),
-                        GlobalUtils.CustomButton(
-                          onPressed: () {
-                            cartController.updateQuantity(productId, quantity + 1);
-                          },
-                          icon: Icon(Icons.add, size: 20),
-                          iconColor: Color(0xff80a8ff),
-                          backgroundColor: Colors.transparent,
-                          showBorder: false,
-                          showShadow: false,
-                          animation: ButtonAnimation.scale,
-                          padding: EdgeInsets.all(4),
-                        ),
-                      ],
-                    ),
-                  )
-                : GlobalUtils.CustomButton(
-                    onPressed: () {
-                      final cartItem = createCartItem(product);
-                      cartController.addToCart(cartItem);
-                    },
-                    text: 'ADD',
-                    textColor: Colors.white,
-                    backgroundColor: Color(0xff80a8ff),
-                    borderRadius: 10,
-                    showBorder: false,
-                    animation: ButtonAnimation.scale,
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  );
-          }),
-        ],
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
       ),
     );
+    // return Container(
+    //   margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+    //   padding: EdgeInsets.all(12),
+    //   decoration: BoxDecoration(
+    //     color: isDark ? Color(0xff2a2a2a) : Color(0xfff5f5f5),
+    //     borderRadius: BorderRadius.circular(15),
+    //   ),
+    //   child: Row(
+    //     children: [
+    //       // Product Image
+    //       Container(
+    //         width: 60,
+    //         height: 60,
+    //         decoration: BoxDecoration(
+    //           color: Colors.white,
+    //           borderRadius: BorderRadius.circular(12),
+    //         ),
+    //         child: ClipRRect(
+    //           borderRadius: BorderRadius.circular(12),
+    //           child: getProductImage(product),
+    //         ),
+    //       ),
+    //       SizedBox(width: 15),
+    //
+    //       // Product Details
+    //       Expanded(
+    //         child: Column(
+    //           crossAxisAlignment: CrossAxisAlignment.start,
+    //           children: [
+    //             Text(
+    //               getProductTitle(product),
+    //               style: TextStyle(
+    //                 fontWeight: FontWeight.bold,
+    //                 fontSize: 16,
+    //                 color: isDark ? Colors.white : Colors.black87,
+    //               ),
+    //               maxLines: 1,
+    //               overflow: TextOverflow.ellipsis,
+    //             ),
+    //             SizedBox(height: 5),
+    //             Text(
+    //               getProductDescription(product),
+    //               style: TextStyle(color: Colors.grey, fontSize: 12),
+    //               maxLines: 1,
+    //               overflow: TextOverflow.ellipsis,
+    //             ),
+    //             SizedBox(height: 5),
+    //             Row(
+    //               children: [
+    //                 Text(
+    //                   '₹${getDiscountPrice(product)}',
+    //                   style: TextStyle(
+    //                     fontWeight: FontWeight.bold,
+    //                     fontSize: 16,
+    //                     color: Color(0xff80a8ff),
+    //                   ),
+    //                 ),
+    //                 SizedBox(width: 5),
+    //                 Text(
+    //                   '₹${getOriginalPrice(product)}',
+    //                   style: TextStyle(
+    //                     fontWeight: FontWeight.bold,
+    //                     fontSize: 12,
+    //                     color: Colors.grey,
+    //                     decoration: TextDecoration.lineThrough,
+    //                   ),
+    //                 ),
+    //               ],
+    //             ),
+    //           ],
+    //         ),
+    //       ),
+    //
+    //       // Add/Quantity Controls
+    //       Obx(() {
+    //         final _ = cartController.cartItems.length;
+    //         final productId = getProductId(product);
+    //         final quantity = cartController.getProductQuantity(productId);
+    //         final isInCart = quantity > 0;
+    //
+    //         return isInCart
+    //             ? Container(
+    //                 decoration: BoxDecoration(
+    //                   color: Color(0xff80a8ff).withOpacity(0.1),
+    //                   borderRadius: BorderRadius.circular(10),
+    //                 ),
+    //                 child: Row(
+    //                   mainAxisSize: MainAxisSize.min,
+    //                   children: [
+    //                     GlobalUtils.CustomButton(
+    //                       onPressed: () {
+    //                         cartController.updateQuantity(productId, quantity - 1);
+    //                       },
+    //                       icon: Icon(Icons.remove, size: 20),
+    //                       iconColor: Color(0xff80a8ff),
+    //                       backgroundColor: Colors.transparent,
+    //                       showBorder: false,
+    //                       showShadow: false,
+    //                       animation: ButtonAnimation.scale,
+    //                       padding: EdgeInsets.all(4),
+    //                     ),
+    //                     Container(
+    //                       padding: EdgeInsets.symmetric(horizontal: 8),
+    //                       child: Text(
+    //                         '$quantity',
+    //                         style: TextStyle(
+    //                           fontWeight: FontWeight.bold,
+    //                           fontSize: 14,
+    //                           color: isDark ? Colors.white : Colors.black87,
+    //                         ),
+    //                       ),
+    //                     ),
+    //                     GlobalUtils.CustomButton(
+    //                       onPressed: () {
+    //                         cartController.updateQuantity(productId, quantity + 1);
+    //                       },
+    //                       icon: Icon(Icons.add, size: 20),
+    //                       iconColor: Color(0xff80a8ff),
+    //                       backgroundColor: Colors.transparent,
+    //                       showBorder: false,
+    //                       showShadow: false,
+    //                       animation: ButtonAnimation.scale,
+    //                       padding: EdgeInsets.all(4),
+    //                     ),
+    //                   ],
+    //                 ),
+    //               )
+    //             : GlobalUtils.CustomButton(
+    //                 onPressed: () {
+    //                   final cartItem = createCartItem(product);
+    //                   cartController.addToCart(cartItem);
+    //                 },
+    //                 text: 'ADD',
+    //                 textColor: Colors.white,
+    //                 backgroundColor: Color(0xff80a8ff),
+    //                 borderRadius: 10,
+    //                 showBorder: false,
+    //                 animation: ButtonAnimation.scale,
+    //                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+    //               );
+    //       }),
+    //     ],
+    //   ),
+    // );
   }
 }
 
@@ -1064,32 +1222,25 @@ class EmptyCartWidget extends StatelessWidget {
 
 
 
-// Widget getProductImage(dynamic product) {
 Widget getProductImage(dynamic product) {
   if (product is TopSelling) {
     return product.images != null && product.images!.isNotEmpty
         ? Image.network(product.images!.first, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
         : Image.asset("assets/images/noImageIcon.png");
   }
-
   if (product is ProductDetailsResponseData) {
-    final images = product.images;
-    if (images != null && images.isNotEmpty) {
-      return Image.network(images.first.toString(), fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"));
-    }
-    return Image.asset("assets/images/noImageIcon.png");
+    return product.images != null && product.images!.isNotEmpty
+        ? Image.network(product.images!.first, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
+        : Image.asset("assets/images/noImageIcon.png");
   }
-
   if (product is ProductItem) {
     return product.image != null && product.image!.isNotEmpty
         ? Image.network(product.image!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
         : Image.asset("assets/images/noImageIcon.png");
   }
-
   return Image.asset("assets/images/noImageIcon.png");
 }
 
-// String getProductTitle(dynamic product) {
 String getProductTitle(dynamic product) {
   if (product is TopSelling) return product.title ?? '';
   if (product is ProductDetailsResponseData) return product.title?.toString() ?? '';
@@ -1097,15 +1248,13 @@ String getProductTitle(dynamic product) {
   return '';
 }
 
-// String getProductDescription(dynamic product) {
 String getProductDescription(dynamic product) {
-  if (product is TopSelling) return product.discription ?? product.title ?? '';
-  if (product is ProductDetailsResponseData) return product.discription?.toString() ?? product.title?.toString() ?? '';
+  if (product is TopSelling) return product.shortDiscription ?? product.title ?? '';
+  if (product is ProductDetailsResponseData) return product.shortDiscription?.toString() ?? product.title?.toString() ?? '';
   if (product is ProductItem) return product.discription ?? '';
   return '';
 }
 
-// String getProductId(dynamic product) {
 String getProductId(dynamic product) {
   if (product is TopSelling) return product.product_id?.toString() ?? '';
   if (product is ProductDetailsResponseData) return product.product_id?.toString() ?? '';
@@ -1130,27 +1279,20 @@ dynamic getOriginalPrice(dynamic product) {
 int getProductStock(dynamic product) {
   if (product is TopSelling) return product.stock ?? 0;
   if (product is ProductDetailsResponseData) return product.stock ?? 0;
-  if (product is ProductItem) return 99;
+  if (product is ProductItem) return 999; // Default high stock for cart items
   return 0;
 }
 
 String getProductSlug(dynamic product) {
   if (product is TopSelling) return product.slug ?? "";
   if (product is ProductDetailsResponseData) return product.slug ?? "";
-  if (product is ProductItem) return "";
   return "";
 }
 
 String getProductImageUrl(dynamic product) {
-  if (product is TopSelling) {
-    return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
-  }
-  if (product is ProductDetailsResponseData) {
-    return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
-  }
-  if (product is ProductItem) {
-    return product.image ?? '';
-  }
+  if (product is TopSelling) return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
+  if (product is ProductDetailsResponseData) return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
+  if (product is ProductItem) return product.image ?? '';
   return '';
 }
 
@@ -1161,6 +1303,7 @@ List<String>? getProductImages(dynamic product) {
   return null;
 }
 
+// FIXED: Proper type conversion
 ProductItem createCartItem(dynamic product) {
   if (product is ProductItem) return product;
 
@@ -1170,12 +1313,17 @@ ProductItem createCartItem(dynamic product) {
     images: getProductImages(product),
     title: getProductTitle(product),
     discription: getProductDescription(product),
-    price: getOriginalPrice(product) is String
-        ? double.tryParse(getOriginalPrice(product).toString()) ?? 0
-        : getOriginalPrice(product) ?? 0,
-    sellPrice: getDiscountPrice(product) is String
-        ? double.tryParse(getDiscountPrice(product).toString()) ?? 0
-        : getDiscountPrice(product) ?? 0,
+    price: _parseToDouble(getOriginalPrice(product)),
+    sellPrice: _parseToDouble(getDiscountPrice(product)),
     qty: 1,
   );
+}
+
+// Helper function for safe type conversion
+double _parseToDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
 }
