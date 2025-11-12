@@ -41,14 +41,16 @@
 // }
 
 class ProductItem {
-  final String productId;
-  final String image;
-  final String title;
-  final List<String>? images;
-  final String discription;
-  final dynamic price;
-  final dynamic sellPrice;
+  String productId;
+  String image;
+  String title;
+  List<String>? images;
+  String discription;
+  dynamic price;
+  dynamic sellPrice;
   int qty;
+  String slug;
+  // int? stock;
 
   ProductItem({
     required this.productId,
@@ -59,6 +61,8 @@ class ProductItem {
     required this.price,
     required this.sellPrice,
     required this.qty,
+    required this.slug,
+    // required this.stock,
   });
 
   Map<String, dynamic> toJson() => {
@@ -70,6 +74,8 @@ class ProductItem {
     "price": price,
     "sell_price": sellPrice,
     "qty": qty,
+    "slug": slug,
+    // "stock": stock,
   };
 
   factory ProductItem.fromJson(Map<String, dynamic> json) => ProductItem(
@@ -80,8 +86,9 @@ class ProductItem {
     discription: json["discription"],
     price: _parseDouble(json["price"]),
     sellPrice: _parseDouble(json["sell_price"]),
-
     qty: json["qty"],
+    slug: json["slug"],
+    // stock: json["stock"],
   );
   static double _parseDouble(dynamic value) {
     if (value == null) return 0.0;

@@ -12,7 +12,7 @@ class WebApiConstant{
   static const String API_URL_CATEGORY_TO_PRODUCT              = BASE_URL + "cate-to-product";               //Pending5
   static const String API_URL_PROFILE                          = BASE_URL + "user/profile";                  //Pending6
   static const String API_URL_UPDATE_PASSWORD                  = BASE_URL +"user/change-password";           //Pending7
-  // static const String API_URL_ADD_ADDRESS                      = BASE_URL +"user/change-address";            //Pending(Not Used)
+  // static const String API_URL_ADD_ADDRESS                      = BASE_URL +"user/change-address";         //Pending(Not Used)
   static const String API_URL_GET_ADDRESS                      = BASE_URL +"user/address";                   //Pending8
   static const String API_URL_CHANGE_ADDRESS                   = BASE_URL +"user/change-address";            //Pending9
   static const String API_URL_BUY_NOW                          = BASE_URL +"user/buy-now";                   //Pending10

@@ -6,6 +6,7 @@ import '../models/HomeDetailsApiResponseModel.dart';
 import '../models/product_model.dart';
 import '../utils/global_utils.dart';
 import '../view/product_detail_screen.dart';
+import 'package:e_commerce_app/models/SearchProductApiResponseModel.dart' as SearchModel;
 
 // =====================================================
 // REUSABLE PRODUCT GRID WIDGET
@@ -111,7 +112,9 @@ class ProductCard extends StatelessWidget {
       child: InkWell(
         onTap: () {
           String slug = getProductSlug(product);
-          Get.to(() => ProductDetailScreen(slug: slug));
+          if (slug.isNotEmpty) {
+            Get.to(() => ProductDetailScreen(slug: slug));
+          }
         },
         child: Container(
           decoration: BoxDecoration(
@@ -231,6 +234,7 @@ class ProductCard extends StatelessWidget {
           final productId = getProductId(product);
           final quantity = cartController.getProductQuantity(productId);
           final isInCart = quantity > 0;
+          // final stock = getProductStock(product);
           final stock = getProductStock(product);
 
           return isInCart
@@ -342,6 +346,11 @@ class ProductListItem extends StatelessWidget {
         String slug = getProductSlug(product);
         if (slug.isNotEmpty) {
           Get.to(() => ProductDetailScreen(slug: slug));
+        } else{
+          GlobalUtils.showSnackbar(
+            title: 'Error',
+            message: 'Product information not available',
+          );
         }
       },
       child: Container(
@@ -500,150 +509,6 @@ class ProductListItem extends StatelessWidget {
         ),
       ),
     );
-    // return Container(
-    //   margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-    //   padding: EdgeInsets.all(12),
-    //   decoration: BoxDecoration(
-    //     color: isDark ? Color(0xff2a2a2a) : Color(0xfff5f5f5),
-    //     borderRadius: BorderRadius.circular(15),
-    //   ),
-    //   child: Row(
-    //     children: [
-    //       // Product Image
-    //       Container(
-    //         width: 60,
-    //         height: 60,
-    //         decoration: BoxDecoration(
-    //           color: Colors.white,
-    //           borderRadius: BorderRadius.circular(12),
-    //         ),
-    //         child: ClipRRect(
-    //           borderRadius: BorderRadius.circular(12),
-    //           child: getProductImage(product),
-    //         ),
-    //       ),
-    //       SizedBox(width: 15),
-    //
-    //       // Product Details
-    //       Expanded(
-    //         child: Column(
-    //           crossAxisAlignment: CrossAxisAlignment.start,
-    //           children: [
-    //             Text(
-    //               getProductTitle(product),
-    //               style: TextStyle(
-    //                 fontWeight: FontWeight.bold,
-    //                 fontSize: 16,
-    //                 color: isDark ? Colors.white : Colors.black87,
-    //               ),
-    //               maxLines: 1,
-    //               overflow: TextOverflow.ellipsis,
-    //             ),
-    //             SizedBox(height: 5),
-    //             Text(
-    //               getProductDescription(product),
-    //               style: TextStyle(color: Colors.grey, fontSize: 12),
-    //               maxLines: 1,
-    //               overflow: TextOverflow.ellipsis,
-    //             ),
-    //             SizedBox(height: 5),
-    //             Row(
-    //               children: [
-    //                 Text(
-    //                   '₹${getDiscountPrice(product)}',
-    //                   style: TextStyle(
-    //                     fontWeight: FontWeight.bold,
-    //                     fontSize: 16,
-    //                     color: Color(0xff80a8ff),
-    //                   ),
-    //                 ),
-    //                 SizedBox(width: 5),
-    //                 Text(
-    //                   '₹${getOriginalPrice(product)}',
-    //                   style: TextStyle(
-    //                     fontWeight: FontWeight.bold,
-    //                     fontSize: 12,
-    //                     color: Colors.grey,
-    //                     decoration: TextDecoration.lineThrough,
-    //                   ),
-    //                 ),
-    //               ],
-    //             ),
-    //           ],
-    //         ),
-    //       ),
-    //
-    //       // Add/Quantity Controls
-    //       Obx(() {
-    //         final _ = cartController.cartItems.length;
-    //         final productId = getProductId(product);
-    //         final quantity = cartController.getProductQuantity(productId);
-    //         final isInCart = quantity > 0;
-    //
-    //         return isInCart
-    //             ? Container(
-    //                 decoration: BoxDecoration(
-    //                   color: Color(0xff80a8ff).withOpacity(0.1),
-    //                   borderRadius: BorderRadius.circular(10),
-    //                 ),
-    //                 child: Row(
-    //                   mainAxisSize: MainAxisSize.min,
-    //                   children: [
-    //                     GlobalUtils.CustomButton(
-    //                       onPressed: () {
-    //                         cartController.updateQuantity(productId, quantity - 1);
-    //                       },
-    //                       icon: Icon(Icons.remove, size: 20),
-    //                       iconColor: Color(0xff80a8ff),
-    //                       backgroundColor: Colors.transparent,
-    //                       showBorder: false,
-    //                       showShadow: false,
-    //                       animation: ButtonAnimation.scale,
-    //                       padding: EdgeInsets.all(4),
-    //                     ),
-    //                     Container(
-    //                       padding: EdgeInsets.symmetric(horizontal: 8),
-    //                       child: Text(
-    //                         '$quantity',
-    //                         style: TextStyle(
-    //                           fontWeight: FontWeight.bold,
-    //                           fontSize: 14,
-    //                           color: isDark ? Colors.white : Colors.black87,
-    //                         ),
-    //                       ),
-    //                     ),
-    //                     GlobalUtils.CustomButton(
-    //                       onPressed: () {
-    //                         cartController.updateQuantity(productId, quantity + 1);
-    //                       },
-    //                       icon: Icon(Icons.add, size: 20),
-    //                       iconColor: Color(0xff80a8ff),
-    //                       backgroundColor: Colors.transparent,
-    //                       showBorder: false,
-    //                       showShadow: false,
-    //                       animation: ButtonAnimation.scale,
-    //                       padding: EdgeInsets.all(4),
-    //                     ),
-    //                   ],
-    //                 ),
-    //               )
-    //             : GlobalUtils.CustomButton(
-    //                 onPressed: () {
-    //                   final cartItem = createCartItem(product);
-    //                   cartController.addToCart(cartItem);
-    //                 },
-    //                 text: 'ADD',
-    //                 textColor: Colors.white,
-    //                 backgroundColor: Color(0xff80a8ff),
-    //                 borderRadius: 10,
-    //                 showBorder: false,
-    //                 animation: ButtonAnimation.scale,
-    //                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-    //               );
-    //       }),
-    //     ],
-    //   ),
-    // );
   }
 }
 
@@ -1223,6 +1088,12 @@ class EmptyCartWidget extends StatelessWidget {
 
 
 Widget getProductImage(dynamic product) {
+  // Search Result (Data from SearchProductApiResponseModel)
+  if (product is SearchModel.Data) {
+    return product.image != null && product.image!.isNotEmpty
+        ? Image.network(product.image!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
+        : Image.asset("assets/images/noImageIcon.png");
+  }
   if (product is TopSelling) {
     return product.images != null && product.images!.isNotEmpty
         ? Image.network(product.images!.first, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
@@ -1242,6 +1113,7 @@ Widget getProductImage(dynamic product) {
 }
 
 String getProductTitle(dynamic product) {
+  if (product is SearchModel.Data) return product.title ?? '';
   if (product is TopSelling) return product.title ?? '';
   if (product is ProductDetailsResponseData) return product.title?.toString() ?? '';
   if (product is ProductItem) return product.title ?? '';
@@ -1249,6 +1121,7 @@ String getProductTitle(dynamic product) {
 }
 
 String getProductDescription(dynamic product) {
+  if (product is SearchModel.Data) return product.shortDescription?.toString() ?? product.description?.toString() ?? product.title ?? '';
   if (product is TopSelling) return product.shortDiscription ?? product.title ?? '';
   if (product is ProductDetailsResponseData) return product.shortDiscription?.toString() ?? product.title?.toString() ?? '';
   if (product is ProductItem) return product.discription ?? '';
@@ -1256,6 +1129,7 @@ String getProductDescription(dynamic product) {
 }
 
 String getProductId(dynamic product) {
+  if (product is SearchModel.Data) return product.productId?.toString() ?? product.id?.toString() ?? '';
   if (product is TopSelling) return product.product_id?.toString() ?? '';
   if (product is ProductDetailsResponseData) return product.product_id?.toString() ?? '';
   if (product is ProductItem) return product.productId;
@@ -1263,6 +1137,7 @@ String getProductId(dynamic product) {
 }
 
 dynamic getDiscountPrice(dynamic product) {
+  if (product is SearchModel.Data) return product.discPrice ?? product.price ?? 0;
   if (product is TopSelling) return product.discPrice ?? product.price ?? 0;
   if (product is ProductDetailsResponseData) return product.discPrice ?? product.price ?? 0;
   if (product is ProductItem) return product.sellPrice ?? 0;
@@ -1270,6 +1145,7 @@ dynamic getDiscountPrice(dynamic product) {
 }
 
 dynamic getOriginalPrice(dynamic product) {
+  if (product is SearchModel.Data) return product.price ?? 0;
   if (product is TopSelling) return product.price ?? 0;
   if (product is ProductDetailsResponseData) return product.price ?? 0;
   if (product is ProductItem) return product.price ?? 0;
@@ -1277,6 +1153,7 @@ dynamic getOriginalPrice(dynamic product) {
 }
 
 int getProductStock(dynamic product) {
+  if (product is SearchModel.Data) return 999; // Search results don't have stock, assume available
   if (product is TopSelling) return product.stock ?? 0;
   if (product is ProductDetailsResponseData) return product.stock ?? 0;
   if (product is ProductItem) return 999; // Default high stock for cart items
@@ -1284,12 +1161,28 @@ int getProductStock(dynamic product) {
 }
 
 String getProductSlug(dynamic product) {
+  print('=== SLUG DEBUG ===');
+  print('Product Type: ${product.runtimeType}');
+
+  if (product is ProductItem) {
+    print('ProductItem slug: ${product.slug}');
+    print('ProductItem ID: ${product.productId}');
+
+    // Agar slug empty hai toh productId use karein
+    if (product.slug.isNotEmpty) {
+      return product.slug;
+    } else {
+      return product.productId; // Fallback to productId
+    }
+  }
+  if (product is SearchModel.Data) return product.slug ?? "";  // ✅ NEW
   if (product is TopSelling) return product.slug ?? "";
   if (product is ProductDetailsResponseData) return product.slug ?? "";
   return "";
 }
 
 String getProductImageUrl(dynamic product) {
+  if (product is SearchModel.Data) return product.image ?? '';
   if (product is TopSelling) return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
   if (product is ProductDetailsResponseData) return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
   if (product is ProductItem) return product.image ?? '';
@@ -1297,6 +1190,10 @@ String getProductImageUrl(dynamic product) {
 }
 
 List<String>? getProductImages(dynamic product) {
+  if (product is SearchModel.Data) {
+    // Search results have single image, convert to list
+    return product.image != null ? [product.image!] : null;
+  }
   if (product is TopSelling) return product.images;
   if (product is ProductDetailsResponseData) return product.images;
   if (product is ProductItem) return product.images;
@@ -1316,6 +1213,8 @@ ProductItem createCartItem(dynamic product) {
     price: _parseToDouble(getOriginalPrice(product)),
     sellPrice: _parseToDouble(getDiscountPrice(product)),
     qty: 1,
+    slug: getProductSlug(product),
+    // stock: getProductStock(product)
   );
 }
 

@@ -524,6 +524,8 @@ Shop now on our app!
                               price: parseToDouble(product.price),
                               sellPrice: parseToDouble(product.discPrice ?? product.price),
                               qty: 1,
+                              slug: product.slug ?? '',
+                              // stock: product.stock ?? 0,
                             );
                             cartController.addToCart(cartItem);
                           }

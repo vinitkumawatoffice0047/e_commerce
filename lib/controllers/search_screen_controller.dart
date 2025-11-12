@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:e_commerce_app/api/web_api_constant.dart';
+import 'package:e_commerce_app/controllers/product_detail_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../api/api_provider.dart';
@@ -13,6 +14,7 @@ class SearchScreenController extends GetxController {
   // Text Controller
   // Rx<TextEditingController> searchTxtController = TextEditingController().obs;
   final TextEditingController searchTxtController = TextEditingController();
+  final ProductDetailController productDetailController = Get.put(ProductDetailController());
 
   // Search Results
   final RxList<ProductItem> searchResults = <ProductItem>[].obs;
@@ -130,6 +132,7 @@ class SearchScreenController extends GetxController {
 
         // Convert all items
         allSearchResults.value = response.data
+        // List<ProductItem> tempProducts = response.data
             ?.map((item) {
           try {
             return ProductItem(
@@ -141,7 +144,9 @@ class SearchScreenController extends GetxController {
               price: item.price ?? 0,
               image: item.image ?? '',
               qty: 1,
-              sellPrice: item.discPrice
+              sellPrice: item.discPrice,
+              slug: item.slug ?? '',
+              // stock: item.stock
               // discPrice: item.discPrice ?? 0,
               // slug: item.slug ?? '',
               // qty: 1,
@@ -154,6 +159,10 @@ class SearchScreenController extends GetxController {
             .where((item) => item != null)
             .cast<ProductItem>()
             .toList() ?? [];
+
+        // await fetchStockForProducts(tempProducts, context);
+
+        // allSearchResults.value = tempProducts;
 
         // Load first page
         loadPage(1);
@@ -239,6 +248,44 @@ class SearchScreenController extends GetxController {
   Future<void> refreshSearch(BuildContext context) async {
     if (lastSearchQuery.isNotEmpty) {
       await searchProductApi(context, lastSearchQuery);
+    }
+  }
+
+  // ✅ Helper function to fetch stock for products
+  Future<void> fetchStockForProducts(List<ProductItem> products, BuildContext context) async {
+    try {
+      for (int i = 0; i < products.length; i++) {
+        final product = products[i];
+
+        // Call product detail API to get stock information
+        var stockResponse = await productDetailController.getProductDetails(context, product.slug);
+
+        if (productDetailController.stock != null) {
+          products[i] = ProductItem(
+            productId: product.productId,
+            title: product.title,
+            discription: product.discription,
+            image: product.image,
+            images: product.images,
+            price: product.price,
+            sellPrice: product.sellPrice,
+            qty: product.qty,
+            slug: product.slug,
+            // stock: productDetailController.stock!.toInt(), // Update with actual stock
+          );
+          // // Update product with actual stock
+          // products[i] = product.copyWith(stock: stockResponse.stock!);
+        } /*else {
+          // Use default stock if API fails
+          products[i] = product.copyWith(stock: 999);
+        }*/
+      }
+    } catch (e) {
+      ConsoleLog.printError("Error fetching stock: $e");
+      // If stock API fails, set default stock for all products
+      /*for (int i = 0; i < products.length; i++) {
+        products[i] = products[i].copyWith(stock: 999);
+      }*/
     }
   }
 
