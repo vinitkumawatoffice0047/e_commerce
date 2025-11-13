@@ -14,7 +14,19 @@ class SearchScreenController extends GetxController {
   // Text Controller
   // Rx<TextEditingController> searchTxtController = TextEditingController().obs;
   final TextEditingController searchTxtController = TextEditingController();
-  final ProductDetailController productDetailController = Get.put(ProductDetailController());
+  // final ProductDetailController productDetailController = Get.put(ProductDetailController());
+  // Use lazy initialization to avoid conflicts
+  ProductDetailController? _productDetailController;
+  ProductDetailController get productDetailController {
+    if (_productDetailController == null) {
+      if (Get.isRegistered<ProductDetailController>()) {
+        _productDetailController = Get.find<ProductDetailController>();
+      } else {
+        _productDetailController = Get.put(ProductDetailController(), tag: 'search_stock');
+      }
+    }
+    return _productDetailController!;
+  }
 
   // Search Results
   final RxList<ProductItem> searchResults = <ProductItem>[].obs;
@@ -42,6 +54,8 @@ class SearchScreenController extends GetxController {
   String? userAccessToken;
   String lastSearchQuery = '';
 
+  bool _isSearching = false;
+
   //   Future<void> getToken(BuildContext context,) async {
   //   await AppSharedPreferences().getString(AppSharedPreferences.token).then((value){
   //     userAccessToken = value;
@@ -49,9 +63,22 @@ class SearchScreenController extends GetxController {
   // }
 
   @override
+  void onInit() {
+    super.onInit();
+    _loadToken();
+  }
+
+  Future<void> _loadToken() async {
+    if (userAccessToken == null || userAccessToken!.isEmpty) {
+      userAccessToken = await AppSharedPreferences().getString(AppSharedPreferences.token);
+    }
+  }
+
+  @override
   void onClose() {
     searchTxtController.dispose();
     _debounceTimer?.cancel();
+    _productDetailController = null;
     super.onClose();
   }
 
@@ -89,11 +116,18 @@ class SearchScreenController extends GetxController {
   // Search Product API Call
   Future<void> searchProductApi(BuildContext context, String searchText) async {
     // Prevent duplicate searches
-    if (lastSearchQuery == searchText && allSearchResults.isNotEmpty) {
+    if (_isSearching) {
+      ConsoleLog.printColor("Search already in progress, skipping", color: "yellow");
       return;
     }
 
+    if (lastSearchQuery == searchText && allSearchResults.isNotEmpty) {
+      ConsoleLog.printColor("Same search query, using cached results", color: "yellow");
+      return;
+    }
+    _isSearching = true;
     lastSearchQuery = searchText;
+    // Only show loading on first search or query change
     isLoading.value = true;
     errorMessage.value = '';
     currentPage.value = 1;
@@ -114,13 +148,13 @@ class SearchScreenController extends GetxController {
     };
 
     try {
+      await _loadToken();
+      ConsoleLog.printColor("Searching for: $searchText", color: "cyan");
 
-      ConsoleLog.printColor("Searching for: $searchText");
-
-      if (userAccessToken == null || userAccessToken!.isEmpty) {
-      await AppSharedPreferences().getString(AppSharedPreferences.token).then((value){
-        userAccessToken = value;
-      });}
+      // if (userAccessToken == null || userAccessToken!.isEmpty) {
+      // await AppSharedPreferences().getString(AppSharedPreferences.token).then((value){
+      //   userAccessToken = value;
+      // });}
 
       // Example API call structure:
       var response = await ApiProvider().searchProductApi(context, WebApiConstant.API_URL_SEARCH_PRODUCT, dict, userAccessToken ?? "");
@@ -204,6 +238,7 @@ class SearchScreenController extends GetxController {
       allSearchResults.clear();
     } finally {
       isLoading.value = false;
+      _isSearching = false;
     }
   }
 
@@ -256,30 +291,47 @@ class SearchScreenController extends GetxController {
     try {
       fetchingStockIds.add(slug);
 
-      Map<String, dynamic> body = {
-        "slug": slug,
-      };
+      // Use the new method that doesn't show loading
+      var productData = await productDetailController.getProductDetailsForStock(slug);
 
-      var response = await ApiProvider().productDetailsAPI(
-        Get.context!,
-        WebApiConstant.API_URL_HOME_PRODUCT_DETAILS,
-        body,
-        userAccessToken ?? "",
-      );
-
-      if (response != null && response.error != true && response.errorCode == 0) {
-        var stock = response.data?.stock;
+      if (productData != null) {
+        var stock = productData.stock;
         productStockMap[slug] = stock ?? 0;
         stockFetchedIds.add(slug);
 
         ConsoleLog.printColor(
             'Stock fetched for slug $slug: $stock',
-            color: "cyan"
+            color: "green"
         );
       } else {
         productStockMap[slug] = 0;
         stockFetchedIds.add(slug);
       }
+
+      // Map<String, dynamic> body = {
+      //   "slug": slug,
+      // };
+      //
+      // var response = await ApiProvider().productDetailsAPI(
+      //   Get.context!,
+      //   WebApiConstant.API_URL_HOME_PRODUCT_DETAILS,
+      //   body,
+      //   userAccessToken ?? "",
+      // );
+      //
+      // if (response != null && response.error != true && response.errorCode == 0) {
+      //   var stock = response.data?.stock;
+      //   productStockMap[slug] = stock ?? 0;
+      //   stockFetchedIds.add(slug);
+      //
+      //   ConsoleLog.printColor(
+      //       'Stock fetched for slug $slug: $stock',
+      //       color: "cyan"
+      //   );
+      // } else {
+      //   productStockMap[slug] = 0;
+      //   stockFetchedIds.add(slug);
+      // }
     } catch (e) {
       ConsoleLog.printError('Error fetching stock for slug $slug: $e');
       productStockMap[slug] = 0;
@@ -373,6 +425,7 @@ class SearchScreenController extends GetxController {
     currentPage.value = 1;
     hasMoreItems.value = true;
     _debounceTimer?.cancel();
+    _isSearching = false;
 
     // Clear stock data
     productStockMap.clear();

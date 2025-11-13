@@ -249,17 +249,17 @@ class ApiProvider {
   Future<ProductDetailsResponseModel?> productDetailsAPI(context, String url, Map<String, dynamic> dictParameter, String token) async {
     ProductDetailsResponseModel? result;
     try{
-      CustomLoading().show(context);
+      // CustomLoading().show(context);
       final Response? response = await requestPostForApi(context, url, dictParameter, token);
       ConsoleLog.printJsonResponse("ResponseNew..........$response.........", color: "green", tag: "Home Product Details Api (Post)");
       if(response != null && response.statusCode == 200){
         result = ProductDetailsResponseModel.fromJson(response.data);
         ConsoleLog.printSuccess("$result",);
       }
-      CustomLoading().hide(context);
+      // CustomLoading().hide(context);
       return result;
     }catch(e){
-      CustomLoading().hide(context);
+      // CustomLoading().hide(context);
       ConsoleLog.printError("Exception..........$e.........");
       Fluttertoast.showToast(msg: "Something went wrong");
       return result;

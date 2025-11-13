@@ -24,17 +24,35 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  final ProductDetailController controller = Get.put(ProductDetailController());
-  final CartController cartController = Get.put(CartController());
+  // final ProductDetailController controller = Get.put(ProductDetailController());
+  // final CartController cartController = Get.put(CartController());
+  // Create new controller instance for each screen
+  late final ProductDetailController controller;
+  late final CartController cartController;
   final WishlistController wishlistController = Get.put(WishlistController());
   int _currentImageIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    // Get or create controller with unique tag based on slug
+    final tag = 'product_detail_${widget.slug}_${DateTime.now().millisecondsSinceEpoch}';
+    controller = Get.put(ProductDetailController(), tag: tag);
+    cartController = Get.find<CartController>();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.getProductDetails(context, widget.slug);
     });
+  }
+
+  @override
+  void dispose() {
+    // Clean up controller when leaving screen
+    final tag = 'product_detail_${widget.slug}_${DateTime.now().millisecondsSinceEpoch}';
+    if (Get.isRegistered<ProductDetailController>(tag: tag)) {
+      Get.delete<ProductDetailController>(tag: tag);
+    }
+    super.dispose();
   }
 
   @override
@@ -44,7 +62,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Scaffold(
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: Color(0xff80a8ff)),
+                SizedBox(height: 16),
+                Text('Loading product details...'),
+              ],
+            ),
+          );
         }
         
         if (controller.errorMessage.isNotEmpty) {
@@ -57,7 +84,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Text(controller.errorMessage.value),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () => controller.getProductDetails(context, widget.slug),
+                  onPressed: () => controller.getProductDetails(context, widget.slug, showLoading: true),
                   child: const Text('Retry'),
                 ),
               ],
