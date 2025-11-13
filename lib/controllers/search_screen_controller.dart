@@ -34,6 +34,11 @@ class SearchScreenController extends GetxController {
   Timer? _debounceTimer;
   final int debounceDuration = 800; // 800ms delay
 
+  // ✨ Stock Management - NEW ADDITION
+  final RxMap<String, int?> productStockMap = <String, int?>{}.obs;
+  final RxSet<String> fetchingStockIds = <String>{}.obs;
+  final RxSet<String> stockFetchedIds = <String>{}.obs;
+
   String? userAccessToken;
   String lastSearchQuery = '';
 
@@ -93,6 +98,11 @@ class SearchScreenController extends GetxController {
     errorMessage.value = '';
     currentPage.value = 1;
     hasMoreItems.value = true;
+
+    // Clear previous stock data
+    productStockMap.clear();
+    fetchingStockIds.clear();
+    stockFetchedIds.clear();
 
 
     // if (searchText.trim().isEmpty) {
@@ -167,6 +177,9 @@ class SearchScreenController extends GetxController {
         // Load first page
         loadPage(1);
 
+        // Background mein stock fetch karenge - OPTIMIZED
+        _fetchStockForVisibleProducts();
+
         ConsoleLog.printSuccess(
             "✅ Total results: ${allSearchResults.length}, Showing: ${searchResults.length}"
         );
@@ -194,7 +207,121 @@ class SearchScreenController extends GetxController {
     }
   }
 
-  // ✅ Load specific page
+  // 🚀 OPTIMIZED: Background mein sirf visible products ka stock fetch kare
+  void _fetchStockForVisibleProducts() {
+    if (searchResults.isEmpty) return;
+
+    // Priority: Pehle visible items ka stock fetch karo
+    _fetchStockInBatches(searchResults, priority: true);
+
+    // Background: Baad mein remaining items ka stock fetch karo
+    if (allSearchResults.length > searchResults.length) {
+      Future.delayed(Duration(milliseconds: 500), () {
+        var remainingProducts = allSearchResults
+            .where((p) => !searchResults.contains(p))
+            .toList();
+        _fetchStockInBatches(remainingProducts, priority: false);
+      });
+    }
+  }
+
+  // Batch processing with optimized timing
+  void _fetchStockInBatches(List<ProductItem> products, {bool priority = false}) {
+    if (products.isEmpty) return;
+
+    int batchSize = priority ? 3 : 5; // Priority items faster fetch
+    int delayBetweenBatches = priority ? 100 : 300; // ms
+
+    for (int i = 0; i < products.length; i += batchSize) {
+      int end = (i + batchSize < products.length) ? i + batchSize : products.length;
+      List<ProductItem> batch = products.sublist(i, end);
+
+      Future.delayed(Duration(milliseconds: i * delayBetweenBatches ~/ batchSize), () {
+        for (var product in batch) {
+          if (product.slug != null && product.slug!.isNotEmpty) {
+            _fetchProductStock(product.slug!);
+          }
+        }
+      });
+    }
+  }
+
+  // Individual product ka stock fetch kare
+  Future<void> _fetchProductStock(String slug) async {
+    // Skip if already fetching or fetched
+    if (fetchingStockIds.contains(slug) || stockFetchedIds.contains(slug)) {
+      return;
+    }
+
+    try {
+      fetchingStockIds.add(slug);
+
+      Map<String, dynamic> body = {
+        "slug": slug,
+      };
+
+      var response = await ApiProvider().productDetailsAPI(
+        Get.context!,
+        WebApiConstant.API_URL_HOME_PRODUCT_DETAILS,
+        body,
+        userAccessToken ?? "",
+      );
+
+      if (response != null && response.error != true && response.errorCode == 0) {
+        var stock = response.data?.stock;
+        productStockMap[slug] = stock ?? 0;
+        stockFetchedIds.add(slug);
+
+        ConsoleLog.printColor(
+            'Stock fetched for slug $slug: $stock',
+            color: "cyan"
+        );
+      } else {
+        productStockMap[slug] = 0;
+        stockFetchedIds.add(slug);
+      }
+    } catch (e) {
+      ConsoleLog.printError('Error fetching stock for slug $slug: $e');
+      productStockMap[slug] = 0;
+      stockFetchedIds.add(slug);
+    } finally {
+      fetchingStockIds.remove(slug);
+    }
+  }
+
+  // Check kare ki product ka stock available hai ya nahi
+  bool isStockAvailable(String? slug) {
+    if (slug == null || slug.isEmpty) return false;
+    var stock = productStockMap[slug];
+    return stock != null && stock > 0;
+  }
+
+  // Check kare ki stock fetch ho raha hai
+  bool isFetchingStock(String? slug) {
+    if (slug == null || slug.isEmpty) return false;
+    return fetchingStockIds.contains(slug) && !stockFetchedIds.contains(slug);
+  }
+
+  // Stock value get kare
+  int? getStock(String? slug) {
+    if (slug == null || slug.isEmpty) return null;
+    return productStockMap[slug];
+  }
+
+  // Check if stock is fetched
+  bool isStockFetched(String? slug) {
+    if (slug == null || slug.isEmpty) return false;
+    return stockFetchedIds.contains(slug);
+  }
+
+  // Manual refresh stock (optional)
+  Future<void> refreshStock(String slug) async {
+    productStockMap.remove(slug);
+    stockFetchedIds.remove(slug);
+    await _fetchProductStock(slug);
+  }
+
+  // Load specific page
   void loadPage(int page) {
     final startIndex = (page - 1) * itemsPerPage;
     final endIndex = startIndex + itemsPerPage;
@@ -216,23 +343,27 @@ class SearchScreenController extends GetxController {
     }
 
     hasMoreItems.value = endIndex < allSearchResults.length;
+
+    // Load stock for new page items
+    if (page > 1) {
+      _fetchStockInBatches(pageItems, priority: true);
+    }
   }
 
-  // ✅ Load More Items (for infinite scroll)
+  // Load More Items
   void loadMoreItems() {
     if (isLoadingMore.value || !hasMoreItems.value) return;
 
     isLoadingMore.value = true;
     currentPage.value++;
 
-    // Simulate slight delay for smooth UX
     Future.delayed(Duration(milliseconds: 300), () {
       loadPage(currentPage.value);
       isLoadingMore.value = false;
     });
   }
 
-  // ✅ Clear Search
+  // Clear Search
   void clearSearch() {
     searchTxtController.clear();
     searchResults.clear();
@@ -242,50 +373,17 @@ class SearchScreenController extends GetxController {
     currentPage.value = 1;
     hasMoreItems.value = true;
     _debounceTimer?.cancel();
+
+    // Clear stock data
+    productStockMap.clear();
+    fetchingStockIds.clear();
+    stockFetchedIds.clear();
   }
 
-  // ✅ Refresh Search
+  // Refresh Search
   Future<void> refreshSearch(BuildContext context) async {
     if (lastSearchQuery.isNotEmpty) {
       await searchProductApi(context, lastSearchQuery);
-    }
-  }
-
-  // ✅ Helper function to fetch stock for products
-  Future<void> fetchStockForProducts(List<ProductItem> products, BuildContext context) async {
-    try {
-      for (int i = 0; i < products.length; i++) {
-        final product = products[i];
-
-        // Call product detail API to get stock information
-        var stockResponse = await productDetailController.getProductDetails(context, product.slug);
-
-        if (productDetailController.stock != null) {
-          products[i] = ProductItem(
-            productId: product.productId,
-            title: product.title,
-            discription: product.discription,
-            image: product.image,
-            images: product.images,
-            price: product.price,
-            sellPrice: product.sellPrice,
-            qty: product.qty,
-            slug: product.slug,
-            // stock: productDetailController.stock!.toInt(), // Update with actual stock
-          );
-          // // Update product with actual stock
-          // products[i] = product.copyWith(stock: stockResponse.stock!);
-        } /*else {
-          // Use default stock if API fails
-          products[i] = product.copyWith(stock: 999);
-        }*/
-      }
-    } catch (e) {
-      ConsoleLog.printError("Error fetching stock: $e");
-      // If stock API fails, set default stock for all products
-      /*for (int i = 0; i < products.length; i++) {
-        products[i] = products[i].copyWith(stock: 999);
-      }*/
     }
   }
 

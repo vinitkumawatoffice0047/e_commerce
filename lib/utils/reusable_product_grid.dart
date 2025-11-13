@@ -2,6 +2,7 @@ import 'package:e_commerce_app/models/ProductDetailsApiResponseModel.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/cart_controller.dart';
+import '../controllers/search_screen_controller.dart';
 import '../models/HomeDetailsApiResponseModel.dart';
 import '../models/product_model.dart';
 import '../utils/global_utils.dart';
@@ -111,10 +112,11 @@ class ProductCard extends StatelessWidget {
     return IntrinsicHeight(
       child: InkWell(
         onTap: () {
-          String slug = getProductSlug(product);
-          if (slug.isNotEmpty) {
-            Get.to(() => ProductDetailScreen(slug: slug));
-          }
+          // String slug = getProductSlug(product);
+          // if (slug.isNotEmpty) {
+          //   Get.to(() => ProductDetailScreen(slug: slug));
+          // }
+          Get.to(() => ProductDetailScreen(slug: getProductSlug(product)));
         },
         child: Container(
           decoration: BoxDecoration(
@@ -228,24 +230,128 @@ class ProductCard extends StatelessWidget {
           ],
         ),
 
-        // Add to Cart / Quantity Controls
-        Obx(() {
-          final _ = cartController.cartItems.length;
-          final productId = getProductId(product);
-          final quantity = cartController.getProductQuantity(productId);
-          final isInCart = quantity > 0;
-          // final stock = getProductStock(product);
-          final stock = getProductStock(product);
+        // SizedBox(height: 8),
 
-          return isInCart
-              ? buildQuantityControls(productId, quantity, cartController, isDark)
-              : stock > 0
-              ? buildAddButton(product, cartController)
-              : buildOutOfStockButton();
-        }),
+        // 🎯 NEW: Add to Cart / Quantity Controls with Stock Check
+        buildStockAwareButton(product, cartController, isDark),
+        // // Add to Cart / Quantity Controls
+        // Obx(() {
+        //   final _ = cartController.cartItems.length;
+        //   final productId = getProductId(product);
+        //   final quantity = cartController.getProductQuantity(productId);
+        //   final isInCart = quantity > 0;
+        //   // final stock = getProductStock(product);
+        //   final stock = getProductStock(product);
+        //
+        //   return isInCart
+        //       ? buildQuantityControls(productId, quantity, cartController, isDark)
+        //       : stock > 0
+        //       ? buildAddButton(product, cartController)
+        //       : buildOutOfStockButton();
+        // }),
       ],
     );
   }
+
+  // 🎯 NEW METHOD: Stock-aware button builder
+  Widget buildStockAwareButton(dynamic product, CartController cartController, bool isDark) {
+    // Agar ProductItem hai (search results), to stock check karo
+    if (product is ProductItem) {
+      return _buildSearchProductButton(product, cartController, isDark);
+    }
+
+    // Other product types ke liye existing logic
+    return Obx(() {
+      final _ = cartController.cartItems.length;
+      final productId = getProductId(product);
+      final quantity = cartController.getProductQuantity(productId);
+      final isInCart = quantity > 0;
+
+      // TopSelling ya ProductDetailsResponseData ke case mein
+      if (product is ProductDetailsResponseData) {
+        final stock = product.stock ?? 0;
+        return isInCart
+            ? buildQuantityControls(productId, quantity, cartController, isDark)
+            : stock > 0
+            ? buildAddButton(product, cartController)
+            : buildOutOfStockButton();
+      }
+
+      // Default case
+      return isInCart
+          ? buildQuantityControls(productId, quantity, cartController, isDark)
+          : buildAddButton(product, cartController);
+    });
+  }
+
+  // 🎯 NEW: Search product button with stock management
+  Widget _buildSearchProductButton(ProductItem product, CartController cartController, bool isDark) {
+    // Try to get SearchScreenController
+    final searchController = Get.isRegistered<SearchScreenController>()
+        ? Get.find<SearchScreenController>()
+        : null;
+
+    if (searchController == null) {
+      // Fallback: Normal button without stock check
+      return Obx(() {
+        final _ = cartController.cartItems.length;
+        final productId = product.productId;
+        final quantity = cartController.getProductQuantity(productId);
+        final isInCart = quantity > 0;
+
+        return isInCart
+            ? buildQuantityControls(productId, quantity, cartController, isDark)
+            : buildAddButton(product, cartController);
+      });
+    }
+
+    // With stock check
+    return Obx(() {
+      final _ = cartController.cartItems.length;
+      final productId = product.productId;
+      final slug = product.slug ?? "";
+      final quantity = cartController.getProductQuantity(productId);
+      final isInCart = quantity > 0;
+
+      // Check stock status
+      final isFetching = searchController.isFetchingStock(slug);
+      final isStockFetched = searchController.isStockFetched(slug);
+      final stock = searchController.getStock(slug);
+
+      // Show loading while fetching
+      if (isFetching && !isStockFetched) {
+        return Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: Color(0xff80a8ff).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: SizedBox(
+              height: 16,
+              width: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff80a8ff)),
+              ),
+            ),
+          ),
+        );
+      }
+
+      // Show Out of Stock if stock is 0
+      if (isStockFetched && stock != null && stock <= 0) {
+        return buildOutOfStockButton();
+      }
+
+      // Show cart controls or add button
+      return isInCart
+          ? buildQuantityControls(productId, quantity, cartController, isDark)
+          : buildAddButton(product, cartController);
+    });
+  }
+
+
 
   Widget buildQuantityControls(String productId, int quantity, CartController cartController, bool isDark) {
     return Container(
@@ -308,19 +414,40 @@ class ProductCard extends StatelessWidget {
     );
   }
 
+  // 🎯 NEW: Out of Stock button
   Widget buildOutOfStockButton() {
-    return GlobalUtils.CustomButton(
+    return Container(
       height: 40,
-      onPressed: null,
-      child: const Text("Out of Stock", style: TextStyle(color: Colors.white),),
-      iconColor: Colors.white,
-      backgroundColor: Colors.grey,
-      borderRadius: 8,
-      padding: const EdgeInsets.all(6),
-      showBorder: false,
-      animation: ButtonAnimation.scale,
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red[200]!),
+      ),
+      child: Center(
+        child: Text(
+          "Out of Stock",
+          style: TextStyle(
+            color: Colors.red[700],
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
+  // Widget buildOutOfStockButton() {
+  //   return GlobalUtils.CustomButton(
+  //     height: 40,
+  //     onPressed: null,
+  //     child: const Text("Out of Stock", style: TextStyle(color: Colors.white),),
+  //     iconColor: Colors.white,
+  //     backgroundColor: Colors.grey,
+  //     borderRadius: 8,
+  //     padding: const EdgeInsets.all(6),
+  //     showBorder: false,
+  //     animation: ButtonAnimation.scale,
+  //   );
+  // }
 }
 
 // =====================================================
@@ -427,84 +554,85 @@ class ProductListItem extends StatelessWidget {
               ),
             ),
 
+            //12.11.2025//Temperory comment
             // Fixed: Add/Quantity Controls with proper sizing
-            SizedBox(
-              width: 100,
-              child: Obx(() {
-                final _ = cartController.cartItems.length;
-                final productId = getProductId(product);
-                final quantity = cartController.getProductQuantity(productId);
-                final isInCart = quantity > 0;
-                final stock = getProductStock(product);
-
-                return isInCart
-                    ? Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Color(0xff80a8ff).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      IconButton(
-                        onPressed: () => cartController.updateQuantity(productId, quantity - 1),
-                        icon: Icon(Icons.remove, size: 18),
-                        color: Color(0xff80a8ff),
-                        padding: EdgeInsets.zero,
-                        constraints: BoxConstraints(),
-                      ),
-                      Text(
-                        '$quantity',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => cartController.updateQuantity(productId, quantity + 1),
-                        icon: Icon(Icons.add, size: 18),
-                        color: Color(0xff80a8ff),
-                        padding: EdgeInsets.zero,
-                        constraints: BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                )
-                    : stock > 0
-                    ? GlobalUtils.CustomButton(
-                  height: 40,
-                  onPressed: () {
-                    final cartItem = createCartItem(product);
-                    cartController.addToCart(cartItem);
-                  },
-                  text: 'ADD',
-                  textColor: Colors.white,
-                  backgroundColor: Color(0xff80a8ff),
-                  borderRadius: 10,
-                  showBorder: false,
-                  animation: ButtonAnimation.scale,
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                )
-                    : Container(
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Colors.grey,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    'Out of Stock',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                );
-              }),
-            ),
+            // SizedBox(
+            //   width: 100,
+            //   child: Obx(() {
+            //     final _ = cartController.cartItems.length;
+            //     final productId = getProductId(product);
+            //     final quantity = cartController.getProductQuantity(productId);
+            //     final isInCart = quantity > 0;
+            //     final stock = getProductStock(product);
+            //
+            //     return isInCart
+            //         ? Container(
+            //       height: 40,
+            //       decoration: BoxDecoration(
+            //         color: Color(0xff80a8ff).withOpacity(0.1),
+            //         borderRadius: BorderRadius.circular(10),
+            //       ),
+            //       child: Row(
+            //         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            //         children: [
+            //           IconButton(
+            //             onPressed: () => cartController.updateQuantity(productId, quantity - 1),
+            //             icon: Icon(Icons.remove, size: 18),
+            //             color: Color(0xff80a8ff),
+            //             padding: EdgeInsets.zero,
+            //             constraints: BoxConstraints(),
+            //           ),
+            //           Text(
+            //             '$quantity',
+            //             style: TextStyle(
+            //               fontWeight: FontWeight.bold,
+            //               fontSize: 14,
+            //               color: isDark ? Colors.white : Colors.black87,
+            //             ),
+            //           ),
+            //           IconButton(
+            //             onPressed: () => cartController.updateQuantity(productId, quantity + 1),
+            //             icon: Icon(Icons.add, size: 18),
+            //             color: Color(0xff80a8ff),
+            //             padding: EdgeInsets.zero,
+            //             constraints: BoxConstraints(),
+            //           ),
+            //         ],
+            //       ),
+            //     )
+            //         : stock > 0
+            //         ? GlobalUtils.CustomButton(
+            //       height: 40,
+            //       onPressed: () {
+            //         final cartItem = createCartItem(product);
+            //         cartController.addToCart(cartItem);
+            //       },
+            //       text: 'ADD',
+            //       textColor: Colors.white,
+            //       backgroundColor: Color(0xff80a8ff),
+            //       borderRadius: 10,
+            //       showBorder: false,
+            //       animation: ButtonAnimation.scale,
+            //       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //     )
+            //         : Container(
+            //       height: 40,
+            //       alignment: Alignment.center,
+            //       decoration: BoxDecoration(
+            //         color: Colors.grey,
+            //         borderRadius: BorderRadius.circular(10),
+            //       ),
+            //       child: Text(
+            //         'Out of Stock',
+            //         style: TextStyle(
+            //           color: Colors.white,
+            //           fontSize: 10,
+            //           fontWeight: FontWeight.bold,
+            //         ),
+            //       ),
+            //     );
+            //   }),
+            // ),
           ],
         ),
       ),
@@ -1087,49 +1215,51 @@ class EmptyCartWidget extends StatelessWidget {
 
 
 
+// Helper functions (keep existing ones and add slug getter)
+String getProductSlug(dynamic product) {
+  if (product is TopSelling) return product.slug ?? "";
+  if (product is ProductDetailsResponseData) return product.slug ?? "";
+  if (product is ProductItem) return product.slug ?? "";
+  return "";
+}
+
+// Keep all other existing helper functions from reusable_product_grid.dart
 Widget getProductImage(dynamic product) {
-  // Search Result (Data from SearchProductApiResponseModel)
-  if (product is SearchModel.Data) {
-    return product.image != null && product.image!.isNotEmpty
-        ? Image.network(product.image!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
-        : Image.asset("assets/images/noImageIcon.png");
-  }
   if (product is TopSelling) {
     return product.images != null && product.images!.isNotEmpty
-        ? Image.network(product.images!.first, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
+        ? Image.network(product.images!.first, fit: BoxFit.contain)
         : Image.asset("assets/images/noImageIcon.png");
   }
   if (product is ProductDetailsResponseData) {
-    return product.images != null && product.images!.isNotEmpty
-        ? Image.network(product.images!.first, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
-        : Image.asset("assets/images/noImageIcon.png");
+    final images = product.images;
+    if (images != null && images.isNotEmpty) {
+      return Image.network(images.first.toString(), fit: BoxFit.contain);
+    }
+    return Image.asset("assets/images/noImageIcon.png");
   }
   if (product is ProductItem) {
-    return product.image != null && product.image!.isNotEmpty
-        ? Image.network(product.image!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
+    return product.image!.isNotEmpty
+        ? Image.network(product.image ?? "", fit: BoxFit.contain)
         : Image.asset("assets/images/noImageIcon.png");
   }
   return Image.asset("assets/images/noImageIcon.png");
 }
 
 String getProductTitle(dynamic product) {
-  if (product is SearchModel.Data) return product.title ?? '';
+  if (product is ProductItem) return product.title ?? '';
   if (product is TopSelling) return product.title ?? '';
   if (product is ProductDetailsResponseData) return product.title?.toString() ?? '';
-  if (product is ProductItem) return product.title ?? '';
   return '';
 }
 
 String getProductDescription(dynamic product) {
-  if (product is SearchModel.Data) return product.shortDescription?.toString() ?? product.description?.toString() ?? product.title ?? '';
-  if (product is TopSelling) return product.shortDiscription ?? product.title ?? '';
-  if (product is ProductDetailsResponseData) return product.shortDiscription?.toString() ?? product.title?.toString() ?? '';
+  if (product is TopSelling) return product.title ?? '';
+  if (product is ProductDetailsResponseData) return product.title?.toString() ?? '';
   if (product is ProductItem) return product.discription ?? '';
   return '';
 }
 
 String getProductId(dynamic product) {
-  if (product is SearchModel.Data) return product.productId?.toString() ?? product.id?.toString() ?? '';
   if (product is TopSelling) return product.product_id?.toString() ?? '';
   if (product is ProductDetailsResponseData) return product.product_id?.toString() ?? '';
   if (product is ProductItem) return product.productId;
@@ -1137,7 +1267,6 @@ String getProductId(dynamic product) {
 }
 
 dynamic getDiscountPrice(dynamic product) {
-  if (product is SearchModel.Data) return product.discPrice ?? product.price ?? 0;
   if (product is TopSelling) return product.discPrice ?? product.price ?? 0;
   if (product is ProductDetailsResponseData) return product.discPrice ?? product.price ?? 0;
   if (product is ProductItem) return product.sellPrice ?? 0;
@@ -1145,62 +1274,12 @@ dynamic getDiscountPrice(dynamic product) {
 }
 
 dynamic getOriginalPrice(dynamic product) {
-  if (product is SearchModel.Data) return product.price ?? 0;
   if (product is TopSelling) return product.price ?? 0;
   if (product is ProductDetailsResponseData) return product.price ?? 0;
   if (product is ProductItem) return product.price ?? 0;
   return 0;
 }
 
-int getProductStock(dynamic product) {
-  if (product is SearchModel.Data) return 999; // Search results don't have stock, assume available
-  if (product is TopSelling) return product.stock ?? 0;
-  if (product is ProductDetailsResponseData) return product.stock ?? 0;
-  if (product is ProductItem) return 999; // Default high stock for cart items
-  return 0;
-}
-
-String getProductSlug(dynamic product) {
-  print('=== SLUG DEBUG ===');
-  print('Product Type: ${product.runtimeType}');
-
-  if (product is ProductItem) {
-    print('ProductItem slug: ${product.slug}');
-    print('ProductItem ID: ${product.productId}');
-
-    // Agar slug empty hai toh productId use karein
-    if (product.slug.isNotEmpty) {
-      return product.slug;
-    } else {
-      return product.productId; // Fallback to productId
-    }
-  }
-  if (product is SearchModel.Data) return product.slug ?? "";  // ✅ NEW
-  if (product is TopSelling) return product.slug ?? "";
-  if (product is ProductDetailsResponseData) return product.slug ?? "";
-  return "";
-}
-
-String getProductImageUrl(dynamic product) {
-  if (product is SearchModel.Data) return product.image ?? '';
-  if (product is TopSelling) return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
-  if (product is ProductDetailsResponseData) return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
-  if (product is ProductItem) return product.image ?? '';
-  return '';
-}
-
-List<String>? getProductImages(dynamic product) {
-  if (product is SearchModel.Data) {
-    // Search results have single image, convert to list
-    return product.image != null ? [product.image!] : null;
-  }
-  if (product is TopSelling) return product.images;
-  if (product is ProductDetailsResponseData) return product.images;
-  if (product is ProductItem) return product.images;
-  return null;
-}
-
-// FIXED: Proper type conversion
 ProductItem createCartItem(dynamic product) {
   if (product is ProductItem) return product;
 
@@ -1210,19 +1289,168 @@ ProductItem createCartItem(dynamic product) {
     images: getProductImages(product),
     title: getProductTitle(product),
     discription: getProductDescription(product),
-    price: _parseToDouble(getOriginalPrice(product)),
-    sellPrice: _parseToDouble(getDiscountPrice(product)),
+    price: getOriginalPrice(product) ?? 0,
+    sellPrice: getDiscountPrice(product) ?? 0,
     qty: 1,
     slug: getProductSlug(product),
-    // stock: getProductStock(product)
   );
 }
 
-// Helper function for safe type conversion
-double _parseToDouble(dynamic value) {
-  if (value == null) return 0.0;
-  if (value is double) return value;
-  if (value is int) return value.toDouble();
-  if (value is String) return double.tryParse(value) ?? 0.0;
-  return 0.0;
+String getProductImageUrl(dynamic product) {
+  if (product is TopSelling) {
+    return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
+  }
+  if (product is ProductDetailsResponseData) {
+    return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
+  }
+  if (product is ProductItem) {
+    return product.image ?? '';
+  }
+  return '';
 }
+
+List<String>? getProductImages(dynamic product) {
+  if (product is TopSelling) return product.images;
+  if (product is ProductDetailsResponseData) return product.images;
+  if (product is ProductItem) return product.images;
+  return null;
+}
+// Widget getProductImage(dynamic product) {
+//   // Search Result (Data from SearchProductApiResponseModel)
+//   if (product is SearchModel.Data) {
+//     return product.image != null && product.image!.isNotEmpty
+//         ? Image.network(product.image!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
+//         : Image.asset("assets/images/noImageIcon.png");
+//   }
+//   if (product is TopSelling) {
+//     return product.images != null && product.images!.isNotEmpty
+//         ? Image.network(product.images!.first, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
+//         : Image.asset("assets/images/noImageIcon.png");
+//   }
+//   if (product is ProductDetailsResponseData) {
+//     return product.images != null && product.images!.isNotEmpty
+//         ? Image.network(product.images!.first, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
+//         : Image.asset("assets/images/noImageIcon.png");
+//   }
+//   if (product is ProductItem) {
+//     return product.image != null && product.image!.isNotEmpty
+//         ? Image.network(product.image!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
+//         : Image.asset("assets/images/noImageIcon.png");
+//   }
+//   return Image.asset("assets/images/noImageIcon.png");
+// }
+//
+// String getProductTitle(dynamic product) {
+//   if (product is SearchModel.Data) return product.title ?? '';
+//   if (product is TopSelling) return product.title ?? '';
+//   if (product is ProductDetailsResponseData) return product.title?.toString() ?? '';
+//   if (product is ProductItem) return product.title ?? '';
+//   return '';
+// }
+//
+// String getProductDescription(dynamic product) {
+//   if (product is SearchModel.Data) return product.shortDescription?.toString() ?? product.description?.toString() ?? product.title ?? '';
+//   if (product is TopSelling) return product.shortDiscription ?? product.title ?? '';
+//   if (product is ProductDetailsResponseData) return product.shortDiscription?.toString() ?? product.title?.toString() ?? '';
+//   if (product is ProductItem) return product.discription ?? '';
+//   return '';
+// }
+//
+// String getProductId(dynamic product) {
+//   if (product is SearchModel.Data) return product.productId?.toString() ?? product.id?.toString() ?? '';
+//   if (product is TopSelling) return product.product_id?.toString() ?? '';
+//   if (product is ProductDetailsResponseData) return product.product_id?.toString() ?? '';
+//   if (product is ProductItem) return product.productId;
+//   return '';
+// }
+//
+// dynamic getDiscountPrice(dynamic product) {
+//   if (product is SearchModel.Data) return product.discPrice ?? product.price ?? 0;
+//   if (product is TopSelling) return product.discPrice ?? product.price ?? 0;
+//   if (product is ProductDetailsResponseData) return product.discPrice ?? product.price ?? 0;
+//   if (product is ProductItem) return product.sellPrice ?? 0;
+//   return 0;
+// }
+//
+// dynamic getOriginalPrice(dynamic product) {
+//   if (product is SearchModel.Data) return product.price ?? 0;
+//   if (product is TopSelling) return product.price ?? 0;
+//   if (product is ProductDetailsResponseData) return product.price ?? 0;
+//   if (product is ProductItem) return product.price ?? 0;
+//   return 0;
+// }
+//
+// int getProductStock(dynamic product) {
+//   if (product is SearchModel.Data) return 999; // Search results don't have stock, assume available
+//   if (product is TopSelling) return product.stock ?? 0;
+//   if (product is ProductDetailsResponseData) return product.stock ?? 0;
+//   if (product is ProductItem) return 999; // Default high stock for cart items
+//   return 0;
+// }
+//
+// String getProductSlug(dynamic product) {
+//   print('=== SLUG DEBUG ===');
+//   print('Product Type: ${product.runtimeType}');
+//
+//   if (product is ProductItem) {
+//     print('ProductItem slug: ${product.slug}');
+//     print('ProductItem ID: ${product.productId}');
+//
+//     // Agar slug empty hai toh productId use karein
+//     if (product.slug.isNotEmpty) {
+//       return product.slug;
+//     } else {
+//       return product.productId; // Fallback to productId
+//     }
+//   }
+//   if (product is SearchModel.Data) return product.slug ?? "";  // ✅ NEW
+//   if (product is TopSelling) return product.slug ?? "";
+//   if (product is ProductDetailsResponseData) return product.slug ?? "";
+//   return "";
+// }
+//
+// String getProductImageUrl(dynamic product) {
+//   if (product is SearchModel.Data) return product.image ?? '';
+//   if (product is TopSelling) return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
+//   if (product is ProductDetailsResponseData) return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
+//   if (product is ProductItem) return product.image ?? '';
+//   return '';
+// }
+//
+// List<String>? getProductImages(dynamic product) {
+//   if (product is SearchModel.Data) {
+//     // Search results have single image, convert to list
+//     return product.image != null ? [product.image!] : null;
+//   }
+//   if (product is TopSelling) return product.images;
+//   if (product is ProductDetailsResponseData) return product.images;
+//   if (product is ProductItem) return product.images;
+//   return null;
+// }
+//
+// // FIXED: Proper type conversion
+// ProductItem createCartItem(dynamic product) {
+//   if (product is ProductItem) return product;
+//
+//   return ProductItem(
+//     productId: getProductId(product),
+//     image: getProductImageUrl(product),
+//     images: getProductImages(product),
+//     title: getProductTitle(product),
+//     discription: getProductDescription(product),
+//     price: _parseToDouble(getOriginalPrice(product)),
+//     sellPrice: _parseToDouble(getDiscountPrice(product)),
+//     qty: 1,
+//     slug: getProductSlug(product),
+//     // stock: getProductStock(product)
+//   );
+// }
+//
+// // Helper function for safe type conversion
+// double _parseToDouble(dynamic value) {
+//   if (value == null) return 0.0;
+//   if (value is double) return value;
+//   if (value is int) return value.toDouble();
+//   if (value is String) return double.tryParse(value) ?? 0.0;
+//   return 0.0;
+// }

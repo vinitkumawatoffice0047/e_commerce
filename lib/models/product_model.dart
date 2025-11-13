@@ -61,7 +61,7 @@ class ProductItem {
     required this.price,
     required this.sellPrice,
     required this.qty,
-    required this.slug,
+    this.slug = "",
     // required this.stock,
   });
 
@@ -87,7 +87,7 @@ class ProductItem {
     price: _parseDouble(json["price"]),
     sellPrice: _parseDouble(json["sell_price"]),
     qty: json["qty"],
-    slug: json["slug"],
+    slug: json["slug"] ?? "",
     // stock: json["stock"],
   );
   static double _parseDouble(dynamic value) {
