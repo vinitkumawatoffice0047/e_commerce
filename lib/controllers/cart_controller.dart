@@ -9,7 +9,6 @@ import '../models/product_model.dart';
 import '../utils/ConsoleLog.dart';
 
 class CartController extends GetxController {
-  // final cartItems = <Map<String, dynamic>>[].obs;
   final cartItems = <ProductItem>[].obs;
   final cartCount = 0.obs;
   RxString currentAddress = ''.obs;
@@ -32,13 +31,6 @@ class CartController extends GetxController {
     LocationPermission permission = await Geolocator.checkPermission();
 
     if (permission == LocationPermission.denied) {
-      // bool dataPermssion = await showPermissionDialog(context);
-      // if(!dataPermssion){
-      //   throw Exception('Location permissions are denied.');
-      // }else{
-      //   permission = await Geolocator.requestPermission();
-      // }
-
       LocationPermission permission2 = await Geolocator.checkPermission();
       if (permission2 == LocationPermission.denied) {
         throw Exception(
@@ -131,7 +123,6 @@ class CartController extends GetxController {
       final cartData = prefs.getString('cart_items');
       if (cartData != null) {
         final List<dynamic> decoded = json.decode(cartData);
-        // cartItems.value = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
         cartItems.value = decoded.map((item) => ProductItem.fromJson(item)).toList();
         updateCartCount();
       }
@@ -153,23 +144,17 @@ class CartController extends GetxController {
 
   // Cart count update karna
   void updateCartCount() {
-    // cartCount.value = cartItems.fold(0, (sum, item) => sum + (item['stock'] as int));
     cartCount.value = cartItems.fold(0, (sum, item) => sum + item.qty);
   }
 
   // Product ko cart mein add karna
-  void addToCart(/*Map<String, dynamic> product*/ProductItem product) {
-    // final index = cartItems.indexWhere((item) => item['product_id'] == product['product_id']);
+  void addToCart(ProductItem product) {
     final index = cartItems.indexWhere((item) => item.productId == product.productId);
 
     if (index != -1) {
-      // Product already exists, increase quantity
-      // cartItems[index]['stock']++;
       cartItems[index].qty++;
       cartItems.refresh();
     } else {
-      // New product, add to cart
-      // product['stock'] = 1;
       product.qty = 1;
       cartItems.add(product);
     }
@@ -179,42 +164,31 @@ class CartController extends GetxController {
 
     GlobalUtils.showSnackbar(
       title: 'Added to Cart',
-      // '${product['name']} added successfully',
       message: '${product.title} added successfully',
       position: SnackPosition.TOP,
       duration: Duration(seconds: 2),
-      icon: Image.network(product.images!.first.toString())
-      // backgroundColor: Color(0xff80a8ff),
-      // colorText: Colors.white,
-      // duration: Duration(seconds: 2),
-      // margin: EdgeInsets.all(10),
-      // borderRadius: 10,
+      icon: Image.network(product.images!.first.toString(), errorBuilder: (context, error, stackTrace) {
+        return Icon(Icons.image);
+      },)
     );
-
-    // Yaha Add to Cart API call karein
-    // addToCartAPI(product['product_id'], 1);
   }
 
   // Cart se product remove karna
   void removeFromCart(String productId) {
-    // cartItems.removeWhere((item) => item['product_id'] == productId);
     cartItems.removeWhere((item) => item.productId == productId);
     updateCartCount();
     saveCartToPreferences();
-
     // Yaha Delete Cart Item API call karein
     // deleteCartItemAPI(productId);
   }
 
   // Quantity update karna
   void updateQuantity(String productId, int quantity) {
-    // final index = cartItems.indexWhere((item) => item['product_id'] == productId);
     final index = cartItems.indexWhere((item) => item.productId == productId);
     if (index != -1) {
       if (quantity <= 0) {
         removeFromCart(productId);
       } else {
-        // cartItems[index]['stock'] = quantity;
         cartItems[index].qty = quantity;
         cartItems.refresh();
         updateCartCount();
@@ -228,8 +202,6 @@ class CartController extends GetxController {
 
   // Product ka current quantity get karna
   int getProductQuantity(String productId) {
-    // final index = cartItems.indexWhere((item) => item['product_id'] == productId);
-    // return index != -1 ? cartItems[index]['stock'] : 0;
     final index = cartItems.indexWhere((item) => item.productId == productId);
     return index != -1 ? cartItems[index].qty : 0;
   }
@@ -241,8 +213,6 @@ class CartController extends GetxController {
 
   // Total price calculate karna
   double getTotalPrice() {
-    // return cartItems.fold(0.0, (sum, item) =>
-    // sum + (item['price'] * item['stock']));
     return cartItems.fold(0.0, (sum, item) {
       final priceToUse = item.sellPrice is double ? item.sellPrice : item.sellPrice;
       return sum + (priceToUse * item.qty);

@@ -576,7 +576,6 @@ Shop now on our app!
 
                 return GlobalUtils.CustomButton(
                   height: 55,
-                  width: 55,
                   onPressed: () {
                     if (isInWishlist) {
                       wishlistController.removeFromWishlist(productId);

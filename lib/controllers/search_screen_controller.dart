@@ -75,10 +75,10 @@ class SearchScreenController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _loadToken();
+    loadToken();
   }
 
-  Future<void> _loadToken() async {
+  Future<void> loadToken() async {
     if (userAccessToken == null || userAccessToken!.isEmpty) {
       userAccessToken = await AppSharedPreferences().getString(AppSharedPreferences.token);
     }
@@ -195,7 +195,7 @@ class SearchScreenController extends GetxController {
     };
 
     try {
-      await _loadToken();
+      await loadToken();
       ConsoleLog.printColor("Searching for: $searchText", color: "cyan");
 
       // if (userAccessToken == null || userAccessToken!.isEmpty) {

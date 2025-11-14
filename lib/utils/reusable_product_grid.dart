@@ -7,7 +7,7 @@ import '../models/HomeDetailsApiResponseModel.dart';
 import '../models/product_model.dart';
 import '../utils/global_utils.dart';
 import '../view/product_detail_screen.dart';
-import 'package:e_commerce_app/models/SearchProductApiResponseModel.dart' as SearchModel;
+
 
 // =====================================================
 // REUSABLE PRODUCT GRID WIDGET
@@ -95,7 +95,6 @@ class ReusableProductList extends StatelessWidget {
 // PRODUCT CARD (Grid Item)
 // =====================================================
 class ProductCard extends StatelessWidget {
-  // final dynamic product;
   dynamic product;
   final bool isDark;
 
@@ -112,10 +111,6 @@ class ProductCard extends StatelessWidget {
     return IntrinsicHeight(
       child: InkWell(
         onTap: () {
-          // String slug = getProductSlug(product);
-          // if (slug.isNotEmpty) {
-          //   Get.to(() => ProductDetailScreen(slug: slug));
-          // }
           Get.to(() => ProductDetailScreen(slug: getProductSlug(product)));
         },
         child: Container(
@@ -155,8 +150,8 @@ class ProductCard extends StatelessWidget {
               ),
 
               // Product Details
-              Flexible(
-                fit: FlexFit.loose,
+              Expanded(
+                // fit: FlexFit.loose,
                 child: Padding(
                   padding: EdgeInsets.all(10),
                   child: Column(
@@ -180,50 +175,42 @@ class ProductCard extends StatelessWidget {
                       Text(
                         getProductDescription(product),
                         style: TextStyle(color: Colors.grey, fontSize: 12),
-                        maxLines: 3,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
 
                       Spacer(),
                       // SizedBox(height: 8),
 
-                      // buildPriceAndCartSection(product, cartController, isDark),
                       Column(
                         children: [
-                          // Column(
-                            //     children: [
-                            //       // Prices
-                                  Row(
-                                    children: [
-                                      Text(
-                                        '₹${getDiscountPrice(product)}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 20,
-                                          color: Color(0xff80a8ff),
-                                        ),
-                                      ),
-                                      SizedBox(width: 5),
-                                      Text(
-                                        '₹${getOriginalPrice(product)}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: Color(0xff80a8ff),
-                                          decoration: TextDecoration.lineThrough,
-                                          decorationColor: Colors.red,
-                                          decorationThickness: 2,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                            //
-                            //       // SizedBox(height: 8),
-                          _buildSmartButton(cartController),
+                          Row(
+                            children: [
+                              Text(
+                                '₹${getDiscountPrice(product)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  color: Color(0xff80a8ff),
+                                ),
+                              ),
+                              SizedBox(width: 5),
+                              Text(
+                                '₹${getOriginalPrice(product)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Color(0xff80a8ff),
+                                  decoration: TextDecoration.lineThrough,
+                                  decorationColor: Colors.red,
+                                  decorationThickness: 2,
+                                ),
+                              ),
+                            ],
+                          ),
+                          buildSmartButton(cartController),
                         ],
                       ),
-                      // Price and Cart Controls
-                      // buildPriceAndCartSection(product, cartController, isDark),
                     ],
                   ),
                 ),
@@ -236,25 +223,25 @@ class ProductCard extends StatelessWidget {
   }
 
   // 🎯 FIXED: Main button logic with proper priority
-  Widget _buildSmartButton(CartController cartController) {
+  Widget buildSmartButton(CartController cartController) {
     // Check if it's a ProductItem (search results)
     if (product is ProductItem) {
-      return _buildSearchResultButton(cartController);
+      return buildSearchResultButton(cartController);
     }
 
     // For other product types (Home screen, etc.)
-    return _buildNormalButton(cartController);
+    return buildNormalButton(cartController);
   }
 
   // 🎯 Search Result Button - STOCK CHECK FIRST
-  Widget _buildSearchResultButton(CartController cartController) {
+  Widget buildSearchResultButton(CartController cartController) {
     final searchController = Get.isRegistered<SearchScreenController>()
         ? Get.find<SearchScreenController>()
         : null;
 
     // If no search controller, fallback to normal
     if (searchController == null) {
-      return _buildNormalButton(cartController);
+      return buildNormalButton(cartController);
     }
 
     final productItem = product as ProductItem;
@@ -274,18 +261,18 @@ class ProductCard extends StatelessWidget {
       }
 
       // 🚨 PRIORITY 2: Check stock status
-      final isFetching = searchController.isFetchingStock(slug);
+      // final isFetching = searchController.isFetchingStock(slug);
       final isStockFetched = searchController.isStockFetched(slug);
       final stock = searchController.getStock(slug);
 
       // STATE 1: Stock not fetched yet - SHOW LOADING
       if (!isStockFetched) {
-        return _buildLoadingButton();
+        return buildLoadingButton();
       }
 
       // STATE 2: Stock fetched - check availability
       if (stock != null && stock <= 0) {
-        return _buildOutOfStockButton();
+        return buildOutOfStockButton();
       }
 
       // STATE 3: Stock available - show add button
@@ -294,12 +281,12 @@ class ProductCard extends StatelessWidget {
       }
 
       // Fallback: Show loading if stock is null but fetched
-      return _buildLoadingButton();
+      return buildLoadingButton();
     });
   }
 
   // 🎯 Normal Button (for Home screen items)
-  Widget _buildNormalButton(CartController cartController) {
+  Widget buildNormalButton(CartController cartController) {
     return Obx(() {
       final _ = cartController.cartItems.length;
       final productId = getProductId(product);
@@ -310,143 +297,19 @@ class ProductCard extends StatelessWidget {
         return buildQuantityControls(productId, quantity, cartController, isDark);
       }
 
-      // For home screen, show add button directly (they have stock in data)
-      if (product is TopSelling) {
-        final stock = (product as TopSelling).stock ?? 0;
-        if (stock <= 0) {
-          return _buildOutOfStockButton();
-        }
+      // FIXED: Use helper function instead of direct casting
+      final stock = getProductStock(product);
+
+      if (stock <= 0) {
+        return buildOutOfStockButton();
       }
 
-      return _buildAddButton(cartController, (product as TopSelling).stock ?? 0);
+      return buildAddButton(cartController, stock);
     });
   }
 
-  // Widget buildPriceAndCartSection(/*dynamic product,*/dynamic product, CartController cartController, bool isDark) {
-  //   return Column(
-  //     children: [
-  //       // Prices
-  //       Row(
-  //         children: [
-  //           Text(
-  //             '₹${getDiscountPrice(product)}',
-  //             style: TextStyle(
-  //               fontWeight: FontWeight.bold,
-  //               fontSize: 20,
-  //               color: Color(0xff80a8ff),
-  //             ),
-  //           ),
-  //           SizedBox(width: 5),
-  //           Text(
-  //             '₹${getOriginalPrice(product)}',
-  //             style: TextStyle(
-  //               fontWeight: FontWeight.bold,
-  //               fontSize: 16,
-  //               color: Color(0xff80a8ff),
-  //               decoration: TextDecoration.lineThrough,
-  //               decorationColor: Colors.red,
-  //               decorationThickness: 2,
-  //             ),
-  //           ),
-  //         ],
-  //       ),
-  //
-  //       // SizedBox(height: 8),
-  //
-  //       // 🎯 NEW: Add to Cart / Quantity Controls with Stock Check
-  //       buildStockAwareButton(product, cartController, isDark),
-  //       // // Add to Cart / Quantity Controls
-  //       // Obx(() {
-  //       //   final _ = cartController.cartItems.length;
-  //       //   final productId = getProductId(product);
-  //       //   final quantity = cartController.getProductQuantity(productId);
-  //       //   final isInCart = quantity > 0;
-  //       //   // final stock = getProductStock(product);
-  //       //   final stock = getProductStock(product);
-  //       //
-  //       //   return isInCart
-  //       //       ? buildQuantityControls(productId, quantity, cartController, isDark)
-  //       //       : stock > 0
-  //       //       ? buildAddButton(product, cartController)
-  //       //       : buildOutOfStockButton();
-  //       // }),
-  //     ],
-  //   );
-  // }
-  //
-  // // 🎯 NEW METHOD: Stock-aware button builder
-  // Widget buildStockAwareButton(dynamic product, CartController cartController, bool isDark) {
-  //   // Agar ProductItem hai (search results), to stock check karo
-  //   if (product is ProductItem) {
-  //     return _buildSearchProductButton(product, cartController, isDark);
-  //   }
-  //
-  //   final searchController = Get.isRegistered<SearchScreenController>()
-  //       ? Get.find<SearchScreenController>()
-  //       : null;
-  //
-  //   if (searchController == null) {
-  //     return _buildSimpleAddButton(cartController, isDark);
-  //   }
-  //
-  //   // Other product types ke liye existing logic
-  //   return Obx(() {
-  //     final _ = cartController.cartItems.length;
-  //     final productId = getProductId(product);
-  //     final slug = getProductSlug(product);
-  //     final quantity = cartController.getProductQuantity(productId);
-  //     final isInCart = quantity > 0;
-  //
-  //     // If already in cart, show quantity controls (no stock check needed)
-  //     if (isInCart) {
-  //       return buildQuantityControls(productId, quantity, cartController, isDark);
-  //     }
-  //
-  //     // Check stock status
-  //     final isFetching = searchController.isFetchingStock(slug);
-  //     final isStockFetched = searchController.isStockFetched(slug);
-  //     final stock = searchController.getStock(slug);
-  //
-  //     // 🚨 STATE 1: Loading Stock (MANDATORY WAIT)
-  //     // Show loading until stock is fetched
-  //     if (!isStockFetched || (isFetching && stock == null)) {
-  //       return _buildLoadingButton();
-  //     }
-  //
-  //     // 🚨 STATE 2: Stock Fetched - Check availability
-  //     if (isStockFetched && stock != null) {
-  //       if (stock <= 0) {
-  //         // Out of Stock
-  //         return _buildOutOfStockButton();
-  //       } else {
-  //         // Stock Available
-  //         return _buildAddButton(cartController, stock);
-  //       }
-  //     }
-  //
-  //     // Fallback: Show loading
-  //     return _buildLoadingButton();
-  //   });
-  //
-  //   //   // TopSelling ya ProductDetailsResponseData ke case mein
-  //   //   if (product is ProductDetailsResponseData) {
-  //   //     final stock = product.stock ?? 0;
-  //   //     return isInCart
-  //   //         ? buildQuantityControls(productId, quantity, cartController, isDark)
-  //   //         : stock > 0
-  //   //         ? buildAddButton(product, cartController)
-  //   //         : buildOutOfStockButton();
-  //   //   }
-  //   //
-  //   //   // Default case
-  //   //   return isInCart
-  //   //       ? buildQuantityControls(productId, quantity, cartController, isDark)
-  //   //       : buildAddButton(product, cartController);
-  //   // });
-  // }
-
   // 🔄 Enhanced Loading Button with Animation
-  Widget _buildLoadingButton() {
+  Widget buildLoadingButton() {
     return Container(
       height: 40,
       decoration: BoxDecoration(
@@ -488,8 +351,9 @@ class ProductCard extends StatelessWidget {
       ),
     );
   }
+
   // ❌ Out of Stock Button
-  Widget _buildOutOfStockButton() {
+  Widget buildOutOfStockButton() {
     return Container(
       height: 40,
       decoration: BoxDecoration(
@@ -578,25 +442,8 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  // ✅ Simple Add Button (for home screen)
-  // Widget buildAddButtonSimple(CartController cartController) {
-  //   return GlobalUtils.CustomButton(
-  //     height: 40,
-  //     onPressed: () {
-  //       final cartItem = createCartItem(product);
-  //       cartController.addToCart(cartItem);
-  //     },
-  //     icon: Icon(Icons.add, size: 20),
-  //     iconColor: Colors.white,
-  //     backgroundColor: Color(0xff80a8ff),
-  //     borderRadius: 8,
-  //     padding: EdgeInsets.all(6),
-  //     showBorder: false,
-  //     animation: ButtonAnimation.scale,
-  //   );
-  // }
   // // ✅ Add to Cart Button (with stock badge)
-  Widget _buildAddButton(CartController cartController, int stock) {
+  Widget buildAddButton(CartController cartController, int stock) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -652,121 +499,10 @@ class ProductCard extends StatelessWidget {
       ],
     );
   }
-  //
-  // // Simple Add Button (fallback for non-search screens)
-  // Widget _buildSimpleAddButton(CartController cartController, bool isDark) {
-  //   return Obx(() {
-  //     final _ = cartController.cartItems.length;
-  //     final productId = getProductId(product);
-  //     final quantity = cartController.getProductQuantity(productId);
-  //     final isInCart = quantity > 0;
-  //
-  //     if (isInCart) {
-  //       return buildQuantityControls(productId, quantity, cartController, isDark);
-  //     }
-  //
-  //     return GlobalUtils.CustomButton(
-  //       height: 40,
-  //       onPressed: () {
-  //         final cartItem = createCartItem(product);
-  //         if (cartItem != null) {
-  //           cartController.addToCart(cartItem);
-  //         }
-  //       },
-  //       child: Row(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: [
-  //           Icon(Icons.add_shopping_cart, size: 18, color: Colors.white),
-  //           SizedBox(width: 4),
-  //           Text(
-  //             'Add',
-  //             style: TextStyle(
-  //               fontSize: 12,
-  //               color: Colors.white,
-  //               fontWeight: FontWeight.w600,
-  //             ),
-  //           ),
-  //         ],
-  //       ),
-  //       backgroundColor: Color(0xff80a8ff),
-  //       borderRadius: 8,
-  //       padding: EdgeInsets.all(6),
-  //       showBorder: false,
-  //       animation: ButtonAnimation.scale,
-  //     );
-  //   });
-  // }
-
-  // 🎯 NEW: Search product button with stock management
-  Widget _buildSearchProductButton(ProductItem product, CartController cartController, bool isDark) {
-    // Try to get SearchScreenController
-    final searchController = Get.isRegistered<SearchScreenController>()
-        ? Get.find<SearchScreenController>()
-        : null;
-
-    if (searchController == null) {
-      // Fallback: Normal button without stock check
-      return Obx(() {
-        final _ = cartController.cartItems.length;
-        final productId = product.productId;
-        final quantity = cartController.getProductQuantity(productId);
-        final isInCart = quantity > 0;
-
-        return isInCart
-            ? buildQuantityControls(productId, quantity, cartController, isDark)
-            : /*buildAddButton(product, cartController)*/_buildAddButton(cartController, (product as TopSelling).stock ?? 0);
-      });
-    }
-
-    // With stock check
-    return Obx(() {
-      final _ = cartController.cartItems.length;
-      final productId = product.productId;
-      final slug = product.slug ?? "";
-      final quantity = cartController.getProductQuantity(productId);
-      final isInCart = quantity > 0;
-
-      // Check stock status
-      final isFetching = searchController.isFetchingStock(slug);
-      final isStockFetched = searchController.isStockFetched(slug);
-      final stock = searchController.getStock(slug);
-
-      // Show loading while fetching
-      if (isFetching && !isStockFetched) {
-        return Container(
-          height: 40,
-          decoration: BoxDecoration(
-            color: Color(0xff80a8ff).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(
-            child: SizedBox(
-              height: 16,
-              width: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff80a8ff)),
-              ),
-            ),
-          ),
-        );
-      }
-
-      // Show Out of Stock if stock is 0
-      if (isStockFetched && stock != null && stock <= 0) {
-        return _buildOutOfStockButton();
-      }
-
-      // Show cart controls or add button
-      return isInCart
-          ? buildQuantityControls(productId, quantity, cartController, isDark)
-          : /*buildAddButton(product, cartController)*/_buildAddButton(cartController, stock!);
-    });
-  }
-
-
 
   Widget buildQuantityControls(String productId, int quantity, CartController cartController, bool isDark) {
+    // 🎯 SMART STOCK CHECKING: Handle both normal products and search results
+    int stock = getActualStock(productId);
     return Container(
       width: GlobalUtils.screenWidth,
       height: 40,
@@ -796,7 +532,18 @@ class ProductCard extends StatelessWidget {
             ),
           ),
           GlobalUtils.CustomButton(
-            onPressed: () => cartController.updateQuantity(productId, quantity + 1),
+            onPressed: () {
+              // 🎯 CONDITION: Quantity stock se kam honi chahiye
+              if (quantity < stock) {
+                cartController.updateQuantity(productId, quantity + 1);
+              } else {
+                // Stock limit reached message
+                GlobalUtils.showSnackbar(
+                  title: 'Stock Limit',
+                  message: 'Only $stock items available in stock',
+                );
+              }
+            },
             icon: Icon(Icons.add, size: 25),
             iconColor: Color(0xff80a8ff),
             backgroundColor: Colors.transparent,
@@ -810,57 +557,27 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  // Widget buildAddButton(/*dynamic product,*/dynamic product, CartController cartController) {
-  //   return GlobalUtils.CustomButton(
-  //     height: 40,
-  //     onPressed: () {
-  //       final cartItem = createCartItem(product);
-  //       cartController.addToCart(cartItem);
-  //     },
-  //     icon: Icon(Icons.add, size: 25),
-  //     iconColor: Colors.white,
-  //     backgroundColor: Color(0xff80a8ff),
-  //     borderRadius: 8,
-  //     padding: EdgeInsets.all(6),
-  //     showBorder: false,
-  //     animation: ButtonAnimation.scale,
-  //   );
-  // }
+  // 🎯 NEW FUNCTION: Get actual stock considering search results
+  int getActualStock(String productId) {
+    // Check if it's a search result product
+    if (product is ProductItem) {
+      final searchController = Get.isRegistered<SearchScreenController>()
+          ? Get.find<SearchScreenController>()
+          : null;
 
-  // // 🎯 NEW: Out of Stock button
-  // Widget buildOutOfStockButton() {
-  //   return Container(
-  //     height: 40,
-  //     decoration: BoxDecoration(
-  //       color: Colors.red[50],
-  //       borderRadius: BorderRadius.circular(8),
-  //       border: Border.all(color: Colors.red[200]!),
-  //     ),
-  //     child: Center(
-  //       child: Text(
-  //         "Out of Stock",
-  //         style: TextStyle(
-  //           color: Colors.red[700],
-  //           fontSize: 12,
-  //           fontWeight: FontWeight.w600,
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-  // Widget buildOutOfStockButton() {
-  //   return GlobalUtils.CustomButton(
-  //     height: 40,
-  //     onPressed: null,
-  //     child: const Text("Out of Stock", style: TextStyle(color: Colors.white),),
-  //     iconColor: Colors.white,
-  //     backgroundColor: Colors.grey,
-  //     borderRadius: 8,
-  //     padding: const EdgeInsets.all(6),
-  //     showBorder: false,
-  //     animation: ButtonAnimation.scale,
-  //   );
-  // }
+      if (searchController != null) {
+        final slug = getProductSlug(product);
+        final fetchedStock = searchController.getStock(slug);
+
+        // If stock is fetched from search, use that
+        if (fetchedStock != null) {
+          return fetchedStock;
+        }
+      }
+    }
+    // Fallback to normal stock for other products
+    return getProductStock(product);
+  }
 }
 
 // =====================================================
@@ -868,7 +585,6 @@ class ProductCard extends StatelessWidget {
 // =====================================================
 class ProductListItem extends StatelessWidget {
   final dynamic product;
-  // final ProductDetailsResponseData product;
   final bool isDark;
 
   const ProductListItem({
@@ -879,8 +595,6 @@ class ProductListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final CartController cartController = Get.put(CartController());
-
     return InkWell(
       onTap: () {
         String slug = getProductSlug(product);
@@ -966,100 +680,12 @@ class ProductListItem extends StatelessWidget {
                 ],
               ),
             ),
-
-            //12.11.2025//Temperory comment
-            // Fixed: Add/Quantity Controls with proper sizing
-            // SizedBox(
-            //   width: 100,
-            //   child: Obx(() {
-            //     final _ = cartController.cartItems.length;
-            //     final productId = getProductId(product);
-            //     final quantity = cartController.getProductQuantity(productId);
-            //     final isInCart = quantity > 0;
-            //     final stock = getProductStock(product);
-            //
-            //     return isInCart
-            //         ? Container(
-            //       height: 40,
-            //       decoration: BoxDecoration(
-            //         color: Color(0xff80a8ff).withOpacity(0.1),
-            //         borderRadius: BorderRadius.circular(10),
-            //       ),
-            //       child: Row(
-            //         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            //         children: [
-            //           IconButton(
-            //             onPressed: () => cartController.updateQuantity(productId, quantity - 1),
-            //             icon: Icon(Icons.remove, size: 18),
-            //             color: Color(0xff80a8ff),
-            //             padding: EdgeInsets.zero,
-            //             constraints: BoxConstraints(),
-            //           ),
-            //           Text(
-            //             '$quantity',
-            //             style: TextStyle(
-            //               fontWeight: FontWeight.bold,
-            //               fontSize: 14,
-            //               color: isDark ? Colors.white : Colors.black87,
-            //             ),
-            //           ),
-            //           IconButton(
-            //             onPressed: () => cartController.updateQuantity(productId, quantity + 1),
-            //             icon: Icon(Icons.add, size: 18),
-            //             color: Color(0xff80a8ff),
-            //             padding: EdgeInsets.zero,
-            //             constraints: BoxConstraints(),
-            //           ),
-            //         ],
-            //       ),
-            //     )
-            //         : stock > 0
-            //         ? GlobalUtils.CustomButton(
-            //       height: 40,
-            //       onPressed: () {
-            //         final cartItem = createCartItem(product);
-            //         cartController.addToCart(cartItem);
-            //       },
-            //       text: 'ADD',
-            //       textColor: Colors.white,
-            //       backgroundColor: Color(0xff80a8ff),
-            //       borderRadius: 10,
-            //       showBorder: false,
-            //       animation: ButtonAnimation.scale,
-            //       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            //     )
-            //         : Container(
-            //       height: 40,
-            //       alignment: Alignment.center,
-            //       decoration: BoxDecoration(
-            //         color: Colors.grey,
-            //         borderRadius: BorderRadius.circular(10),
-            //       ),
-            //       child: Text(
-            //         'Out of Stock',
-            //         style: TextStyle(
-            //           color: Colors.white,
-            //           fontSize: 10,
-            //           fontWeight: FontWeight.bold,
-            //         ),
-            //       ),
-            //     );
-            //   }),
-            // ),
           ],
         ),
       ),
     );
   }
 }
-
-// =====================================================
-// HELPER FUNCTIONS
-// =====================================================
-
-
-
-
 
 
 
@@ -1100,6 +726,7 @@ class ReusableCartList extends StatelessWidget {
   }
 }
 
+
 // =====================================================
 // CART ITEM CARD
 // =====================================================
@@ -1138,24 +765,24 @@ class CartItemCard extends StatelessWidget {
       child: Row(
         children: [
           // Product Image
-          _buildProductImage(),
+          buildProductImage(),
           SizedBox(width: 15),
 
           // Product Details
           Expanded(
-            child: _buildProductDetails(),
+            child: buildProductDetails(),
           ),
 
           SizedBox(width: 10),
 
           // Quantity Controls
-          _buildQuantityControls(cartController),
+          buildQuantityControlsForCart(cartController),
         ],
       ),
     );
   }
 
-  Widget _buildProductImage() {
+  Widget buildProductImage() {
     return Container(
       width: 70,
       height: 70,
@@ -1183,7 +810,7 @@ class CartItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildProductDetails() {
+  Widget buildProductDetails() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1234,7 +861,9 @@ class CartItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildQuantityControls(CartController cartController) {
+  Widget buildQuantityControlsForCart(CartController cartController) {
+    // 🎯 STOCK CHECK: Get actual stock for this product
+    final stock = getActualStockForCart(item.productId);
     return Container(
       decoration: BoxDecoration(
         color: Color(0xff80a8ff).withOpacity(0.1),
@@ -1244,11 +873,28 @@ class CartItemCard extends StatelessWidget {
         children: [
           GlobalUtils.CustomButton(
             onPressed: () {
-              cartController.updateQuantity(
-                item.productId,
-                item.qty + 1,
-              );
+              // 🎯 CONDITION: Quantity stock se kam honi chahiye
+              if (item.qty < stock) {
+                cartController.updateQuantity(
+                  item.productId,
+                  item.qty + 1,
+                );
+              } else {
+                // 🎯 MANAGED SNACKBAR: Prevents multiple shows
+                GlobalUtils.showSnackbar(
+                  title: 'Stock Limit',
+                  message: 'Only $stock items available in stock',
+                  type: SnackbarType.warning,
+                  duration: Duration(seconds: 2),
+                );
+              }
             },
+            // onPressed: () {
+            //   cartController.updateQuantity(
+            //     item.productId,
+            //     item.qty + 1,
+            //   );
+            // },
             icon: Icon(Icons.add, size: 20),
             iconColor: Color(0xff80a8ff),
             backgroundColor: Colors.transparent,
@@ -1286,6 +932,30 @@ class CartItemCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // 🎯 NEW FUNCTION: Get actual stock for cart items
+  int getActualStockForCart(String productId) {
+    // Check if it's a search result product
+    if (item is ProductItem) {
+      final searchController = Get.isRegistered<SearchScreenController>()
+          ? Get.find<SearchScreenController>()
+          : null;
+
+      if (searchController != null) {
+        final slug = item.slug ?? "";
+        final fetchedStock = searchController.getStock(slug);
+
+        // If stock is fetched from search, use that
+        if (fetchedStock != null) {
+          return fetchedStock;
+        }
+      }
+    }
+
+    // Fallback: Use the stock from the item itself
+    // return item.stock ?? 0;
+    return getProductStock(item);
   }
 }
 
@@ -1622,11 +1292,9 @@ class EmptyCartWidget extends StatelessWidget {
 
 
 
-
-
-
-
-
+// =====================================================
+// HELPER FUNCTIONS
+// =====================================================
 
 // Helper functions (keep existing ones and add slug getter)
 String getProductSlug(dynamic product) {
@@ -1706,9 +1374,16 @@ dynamic getOriginalPrice(dynamic product) {
   return 0;
 }
 
+// FIXED: Added proper type checking for stock
+int getProductStock(dynamic product) {
+  if (product is TopSelling) return product.stock ?? 0;
+  if (product is ProductDetailsResponseData) return product.stock ?? 0;
+  if (product is ProductItem) return 99;
+  return 0;
+}
+
 ProductItem createCartItem(dynamic product) {
   if (product is ProductItem) return product;
-
   return ProductItem(
     productId: getProductId(product),
     image: getProductImageUrl(product),
@@ -1741,142 +1416,3 @@ List<String>? getProductImages(dynamic product) {
   if (product is ProductItem) return product.images;
   return null;
 }
-// Widget getProductImage(dynamic product) {
-//   // Search Result (Data from SearchProductApiResponseModel)
-//   if (product is SearchModel.Data) {
-//     return product.image != null && product.image!.isNotEmpty
-//         ? Image.network(product.image!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
-//         : Image.asset("assets/images/noImageIcon.png");
-//   }
-//   if (product is TopSelling) {
-//     return product.images != null && product.images!.isNotEmpty
-//         ? Image.network(product.images!.first, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
-//         : Image.asset("assets/images/noImageIcon.png");
-//   }
-//   if (product is ProductDetailsResponseData) {
-//     return product.images != null && product.images!.isNotEmpty
-//         ? Image.network(product.images!.first, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
-//         : Image.asset("assets/images/noImageIcon.png");
-//   }
-//   if (product is ProductItem) {
-//     return product.image != null && product.image!.isNotEmpty
-//         ? Image.network(product.image!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Image.asset("assets/images/noImageIcon.png"))
-//         : Image.asset("assets/images/noImageIcon.png");
-//   }
-//   return Image.asset("assets/images/noImageIcon.png");
-// }
-//
-// String getProductTitle(dynamic product) {
-//   if (product is SearchModel.Data) return product.title ?? '';
-//   if (product is TopSelling) return product.title ?? '';
-//   if (product is ProductDetailsResponseData) return product.title?.toString() ?? '';
-//   if (product is ProductItem) return product.title ?? '';
-//   return '';
-// }
-//
-// String getProductDescription(dynamic product) {
-//   if (product is SearchModel.Data) return product.shortDescription?.toString() ?? product.description?.toString() ?? product.title ?? '';
-//   if (product is TopSelling) return product.shortDiscription ?? product.title ?? '';
-//   if (product is ProductDetailsResponseData) return product.shortDiscription?.toString() ?? product.title?.toString() ?? '';
-//   if (product is ProductItem) return product.discription ?? '';
-//   return '';
-// }
-//
-// String getProductId(dynamic product) {
-//   if (product is SearchModel.Data) return product.productId?.toString() ?? product.id?.toString() ?? '';
-//   if (product is TopSelling) return product.product_id?.toString() ?? '';
-//   if (product is ProductDetailsResponseData) return product.product_id?.toString() ?? '';
-//   if (product is ProductItem) return product.productId;
-//   return '';
-// }
-//
-// dynamic getDiscountPrice(dynamic product) {
-//   if (product is SearchModel.Data) return product.discPrice ?? product.price ?? 0;
-//   if (product is TopSelling) return product.discPrice ?? product.price ?? 0;
-//   if (product is ProductDetailsResponseData) return product.discPrice ?? product.price ?? 0;
-//   if (product is ProductItem) return product.sellPrice ?? 0;
-//   return 0;
-// }
-//
-// dynamic getOriginalPrice(dynamic product) {
-//   if (product is SearchModel.Data) return product.price ?? 0;
-//   if (product is TopSelling) return product.price ?? 0;
-//   if (product is ProductDetailsResponseData) return product.price ?? 0;
-//   if (product is ProductItem) return product.price ?? 0;
-//   return 0;
-// }
-//
-// int getProductStock(dynamic product) {
-//   if (product is SearchModel.Data) return 999; // Search results don't have stock, assume available
-//   if (product is TopSelling) return product.stock ?? 0;
-//   if (product is ProductDetailsResponseData) return product.stock ?? 0;
-//   if (product is ProductItem) return 999; // Default high stock for cart items
-//   return 0;
-// }
-//
-// String getProductSlug(dynamic product) {
-//   print('=== SLUG DEBUG ===');
-//   print('Product Type: ${product.runtimeType}');
-//
-//   if (product is ProductItem) {
-//     print('ProductItem slug: ${product.slug}');
-//     print('ProductItem ID: ${product.productId}');
-//
-//     // Agar slug empty hai toh productId use karein
-//     if (product.slug.isNotEmpty) {
-//       return product.slug;
-//     } else {
-//       return product.productId; // Fallback to productId
-//     }
-//   }
-//   if (product is SearchModel.Data) return product.slug ?? "";  // ✅ NEW
-//   if (product is TopSelling) return product.slug ?? "";
-//   if (product is ProductDetailsResponseData) return product.slug ?? "";
-//   return "";
-// }
-//
-// String getProductImageUrl(dynamic product) {
-//   if (product is SearchModel.Data) return product.image ?? '';
-//   if (product is TopSelling) return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
-//   if (product is ProductDetailsResponseData) return product.images != null && product.images!.isNotEmpty ? product.images!.first : '';
-//   if (product is ProductItem) return product.image ?? '';
-//   return '';
-// }
-//
-// List<String>? getProductImages(dynamic product) {
-//   if (product is SearchModel.Data) {
-//     // Search results have single image, convert to list
-//     return product.image != null ? [product.image!] : null;
-//   }
-//   if (product is TopSelling) return product.images;
-//   if (product is ProductDetailsResponseData) return product.images;
-//   if (product is ProductItem) return product.images;
-//   return null;
-// }
-//
-// // FIXED: Proper type conversion
-// ProductItem createCartItem(dynamic product) {
-//   if (product is ProductItem) return product;
-//
-//   return ProductItem(
-//     productId: getProductId(product),
-//     image: getProductImageUrl(product),
-//     images: getProductImages(product),
-//     title: getProductTitle(product),
-//     discription: getProductDescription(product),
-//     price: _parseToDouble(getOriginalPrice(product)),
-//     sellPrice: _parseToDouble(getDiscountPrice(product)),
-//     qty: 1,
-//     slug: getProductSlug(product),
-//     // stock: getProductStock(product)
-//   );
-// }
-//
-// // Helper function for safe type conversion
-// double _parseToDouble(dynamic value) {
-//   if (value == null) return 0.0;
-//   if (value is double) return value;
-//   if (value is int) return value.toDouble();
-//   if (value is String) return double.tryParse(value) ?? 0.0;
-//   return 0.0;
-// }

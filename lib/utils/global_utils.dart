@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -101,15 +103,23 @@ class GlobalUtils {
     );
   }
 
+  static final Map<String, Timer> _cooldownTimers = {};
   // 🔔 Custom Snackbar
   static void showSnackbar({
     required String title,
     required String message,
     SnackbarType type = SnackbarType.info,
     Duration? duration,
+    Duration cooldown = const Duration(seconds: 3),
     SnackPosition position = SnackPosition.TOP,
     Widget? icon,
   }) {
+    final String messageKey = '${title.trim()}:${message.trim()}:${type.name}';
+    // Check if this specific message is in cooldown
+    if (_cooldownTimers.containsKey(messageKey)) {
+      return;
+    }
+
     Color backgroundColor;
     Color textColor = Colors.white;
     IconData defaultIcon;
@@ -149,6 +159,11 @@ class GlobalUtils {
       isDismissible: true,
       dismissDirection: DismissDirection.horizontal,
     );
+
+    // Set cooldown for this specific message
+    _cooldownTimers[messageKey] = Timer(cooldown, () {
+      _cooldownTimers.remove(messageKey);
+    });
   }
 
   // 📦 Loading Dialog
