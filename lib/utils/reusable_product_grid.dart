@@ -187,7 +187,41 @@ class ProductCard extends StatelessWidget {
                       Spacer(),
                       // SizedBox(height: 8),
 
-                      buildPriceAndCartSection(product, cartController, isDark),
+                      // buildPriceAndCartSection(product, cartController, isDark),
+                      Column(
+                        children: [
+                          // Column(
+                            //     children: [
+                            //       // Prices
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '₹${getDiscountPrice(product)}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 20,
+                                          color: Color(0xff80a8ff),
+                                        ),
+                                      ),
+                                      SizedBox(width: 5),
+                                      Text(
+                                        '₹${getOriginalPrice(product)}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: Color(0xff80a8ff),
+                                          decoration: TextDecoration.lineThrough,
+                                          decorationColor: Colors.red,
+                                          decorationThickness: 2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                            //
+                            //       // SizedBox(height: 8),
+                          _buildSmartButton(cartController),
+                        ],
+                      ),
                       // Price and Cart Controls
                       // buildPriceAndCartSection(product, cartController, isDark),
                     ],
@@ -201,88 +235,467 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget buildPriceAndCartSection(/*dynamic product,*/dynamic product, CartController cartController, bool isDark) {
-    return Column(
-      children: [
-        // Prices
-        Row(
-          children: [
-            Text(
-              '₹${getDiscountPrice(product)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: Color(0xff80a8ff),
-              ),
-            ),
-            SizedBox(width: 5),
-            Text(
-              '₹${getOriginalPrice(product)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Color(0xff80a8ff),
-                decoration: TextDecoration.lineThrough,
-                decorationColor: Colors.red,
-                decorationThickness: 2,
-              ),
-            ),
-          ],
-        ),
-
-        // SizedBox(height: 8),
-
-        // 🎯 NEW: Add to Cart / Quantity Controls with Stock Check
-        buildStockAwareButton(product, cartController, isDark),
-        // // Add to Cart / Quantity Controls
-        // Obx(() {
-        //   final _ = cartController.cartItems.length;
-        //   final productId = getProductId(product);
-        //   final quantity = cartController.getProductQuantity(productId);
-        //   final isInCart = quantity > 0;
-        //   // final stock = getProductStock(product);
-        //   final stock = getProductStock(product);
-        //
-        //   return isInCart
-        //       ? buildQuantityControls(productId, quantity, cartController, isDark)
-        //       : stock > 0
-        //       ? buildAddButton(product, cartController)
-        //       : buildOutOfStockButton();
-        // }),
-      ],
-    );
-  }
-
-  // 🎯 NEW METHOD: Stock-aware button builder
-  Widget buildStockAwareButton(dynamic product, CartController cartController, bool isDark) {
-    // Agar ProductItem hai (search results), to stock check karo
+  // 🎯 FIXED: Main button logic with proper priority
+  Widget _buildSmartButton(CartController cartController) {
+    // Check if it's a ProductItem (search results)
     if (product is ProductItem) {
-      return _buildSearchProductButton(product, cartController, isDark);
+      return _buildSearchResultButton(cartController);
     }
 
-    // Other product types ke liye existing logic
+    // For other product types (Home screen, etc.)
+    return _buildNormalButton(cartController);
+  }
+
+  // 🎯 Search Result Button - STOCK CHECK FIRST
+  Widget _buildSearchResultButton(CartController cartController) {
+    final searchController = Get.isRegistered<SearchScreenController>()
+        ? Get.find<SearchScreenController>()
+        : null;
+
+    // If no search controller, fallback to normal
+    if (searchController == null) {
+      return _buildNormalButton(cartController);
+    }
+
+    final productItem = product as ProductItem;
+    final productId = productItem.productId;
+    final slug = productItem.slug ?? "";
+
+    return Obx(() {
+      // Force rebuild when cart changes
+      final _ = cartController.cartItems.length;
+
+      final quantity = cartController.getProductQuantity(productId);
+      final isInCart = quantity > 0;
+
+      // 🚨 PRIORITY 1: If in cart, show quantity controls (no stock check)
+      if (isInCart) {
+        return buildQuantityControls(productId, quantity, cartController, isDark);
+      }
+
+      // 🚨 PRIORITY 2: Check stock status
+      final isFetching = searchController.isFetchingStock(slug);
+      final isStockFetched = searchController.isStockFetched(slug);
+      final stock = searchController.getStock(slug);
+
+      // STATE 1: Stock not fetched yet - SHOW LOADING
+      if (!isStockFetched) {
+        return _buildLoadingButton();
+      }
+
+      // STATE 2: Stock fetched - check availability
+      if (stock != null && stock <= 0) {
+        return _buildOutOfStockButton();
+      }
+
+      // STATE 3: Stock available - show add button
+      if (stock != null && stock > 0) {
+        return buildAddButtonWithStock(cartController, stock);
+      }
+
+      // Fallback: Show loading if stock is null but fetched
+      return _buildLoadingButton();
+    });
+  }
+
+  // 🎯 Normal Button (for Home screen items)
+  Widget _buildNormalButton(CartController cartController) {
     return Obx(() {
       final _ = cartController.cartItems.length;
       final productId = getProductId(product);
       final quantity = cartController.getProductQuantity(productId);
       final isInCart = quantity > 0;
 
-      // TopSelling ya ProductDetailsResponseData ke case mein
-      if (product is ProductDetailsResponseData) {
-        final stock = product.stock ?? 0;
-        return isInCart
-            ? buildQuantityControls(productId, quantity, cartController, isDark)
-            : stock > 0
-            ? buildAddButton(product, cartController)
-            : buildOutOfStockButton();
+      if (isInCart) {
+        return buildQuantityControls(productId, quantity, cartController, isDark);
       }
 
-      // Default case
-      return isInCart
-          ? buildQuantityControls(productId, quantity, cartController, isDark)
-          : buildAddButton(product, cartController);
+      // For home screen, show add button directly (they have stock in data)
+      if (product is TopSelling) {
+        final stock = (product as TopSelling).stock ?? 0;
+        if (stock <= 0) {
+          return _buildOutOfStockButton();
+        }
+      }
+
+      return _buildAddButton(cartController, (product as TopSelling).stock ?? 0);
     });
   }
+
+  // Widget buildPriceAndCartSection(/*dynamic product,*/dynamic product, CartController cartController, bool isDark) {
+  //   return Column(
+  //     children: [
+  //       // Prices
+  //       Row(
+  //         children: [
+  //           Text(
+  //             '₹${getDiscountPrice(product)}',
+  //             style: TextStyle(
+  //               fontWeight: FontWeight.bold,
+  //               fontSize: 20,
+  //               color: Color(0xff80a8ff),
+  //             ),
+  //           ),
+  //           SizedBox(width: 5),
+  //           Text(
+  //             '₹${getOriginalPrice(product)}',
+  //             style: TextStyle(
+  //               fontWeight: FontWeight.bold,
+  //               fontSize: 16,
+  //               color: Color(0xff80a8ff),
+  //               decoration: TextDecoration.lineThrough,
+  //               decorationColor: Colors.red,
+  //               decorationThickness: 2,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //
+  //       // SizedBox(height: 8),
+  //
+  //       // 🎯 NEW: Add to Cart / Quantity Controls with Stock Check
+  //       buildStockAwareButton(product, cartController, isDark),
+  //       // // Add to Cart / Quantity Controls
+  //       // Obx(() {
+  //       //   final _ = cartController.cartItems.length;
+  //       //   final productId = getProductId(product);
+  //       //   final quantity = cartController.getProductQuantity(productId);
+  //       //   final isInCart = quantity > 0;
+  //       //   // final stock = getProductStock(product);
+  //       //   final stock = getProductStock(product);
+  //       //
+  //       //   return isInCart
+  //       //       ? buildQuantityControls(productId, quantity, cartController, isDark)
+  //       //       : stock > 0
+  //       //       ? buildAddButton(product, cartController)
+  //       //       : buildOutOfStockButton();
+  //       // }),
+  //     ],
+  //   );
+  // }
+  //
+  // // 🎯 NEW METHOD: Stock-aware button builder
+  // Widget buildStockAwareButton(dynamic product, CartController cartController, bool isDark) {
+  //   // Agar ProductItem hai (search results), to stock check karo
+  //   if (product is ProductItem) {
+  //     return _buildSearchProductButton(product, cartController, isDark);
+  //   }
+  //
+  //   final searchController = Get.isRegistered<SearchScreenController>()
+  //       ? Get.find<SearchScreenController>()
+  //       : null;
+  //
+  //   if (searchController == null) {
+  //     return _buildSimpleAddButton(cartController, isDark);
+  //   }
+  //
+  //   // Other product types ke liye existing logic
+  //   return Obx(() {
+  //     final _ = cartController.cartItems.length;
+  //     final productId = getProductId(product);
+  //     final slug = getProductSlug(product);
+  //     final quantity = cartController.getProductQuantity(productId);
+  //     final isInCart = quantity > 0;
+  //
+  //     // If already in cart, show quantity controls (no stock check needed)
+  //     if (isInCart) {
+  //       return buildQuantityControls(productId, quantity, cartController, isDark);
+  //     }
+  //
+  //     // Check stock status
+  //     final isFetching = searchController.isFetchingStock(slug);
+  //     final isStockFetched = searchController.isStockFetched(slug);
+  //     final stock = searchController.getStock(slug);
+  //
+  //     // 🚨 STATE 1: Loading Stock (MANDATORY WAIT)
+  //     // Show loading until stock is fetched
+  //     if (!isStockFetched || (isFetching && stock == null)) {
+  //       return _buildLoadingButton();
+  //     }
+  //
+  //     // 🚨 STATE 2: Stock Fetched - Check availability
+  //     if (isStockFetched && stock != null) {
+  //       if (stock <= 0) {
+  //         // Out of Stock
+  //         return _buildOutOfStockButton();
+  //       } else {
+  //         // Stock Available
+  //         return _buildAddButton(cartController, stock);
+  //       }
+  //     }
+  //
+  //     // Fallback: Show loading
+  //     return _buildLoadingButton();
+  //   });
+  //
+  //   //   // TopSelling ya ProductDetailsResponseData ke case mein
+  //   //   if (product is ProductDetailsResponseData) {
+  //   //     final stock = product.stock ?? 0;
+  //   //     return isInCart
+  //   //         ? buildQuantityControls(productId, quantity, cartController, isDark)
+  //   //         : stock > 0
+  //   //         ? buildAddButton(product, cartController)
+  //   //         : buildOutOfStockButton();
+  //   //   }
+  //   //
+  //   //   // Default case
+  //   //   return isInCart
+  //   //       ? buildQuantityControls(productId, quantity, cartController, isDark)
+  //   //       : buildAddButton(product, cartController);
+  //   // });
+  // }
+
+  // 🔄 Enhanced Loading Button with Animation
+  Widget _buildLoadingButton() {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xff80a8ff).withOpacity(0.1),
+            Color(0xff80a8ff).withOpacity(0.2),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Color(0xff80a8ff).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff80a8ff)),
+            ),
+          ),
+          SizedBox(width: 8),
+          Text(
+            'Checking Stock...',
+            style: TextStyle(
+              fontSize: 11,
+              color: Color(0xff80a8ff),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  // ❌ Out of Stock Button
+  Widget _buildOutOfStockButton() {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.red[300]!, width: 1.5),
+      ),
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.remove_shopping_cart_outlined,
+              size: 18,
+              color: Colors.red[700],
+            ),
+            SizedBox(width: 6),
+            Text(
+              'Out of Stock',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.red[700],
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ Add Button with Stock Badge
+  Widget buildAddButtonWithStock(CartController cartController, int stock) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Stock Badge
+        if (stock <= 10)
+          Container(
+            margin: EdgeInsets.only(bottom: 4),
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: stock <= 5 ? Colors.orange[100] : Colors.green[100],
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              stock <= 5 ? 'Only $stock left!' : '$stock in stock',
+              style: TextStyle(
+                fontSize: 9,
+                color: stock <= 5 ? Colors.orange[900] : Colors.green[900],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+
+        // Add Button
+        GlobalUtils.CustomButton(
+          height: 40,
+          onPressed: () {
+            final cartItem = createCartItem(product);
+            cartController.addToCart(cartItem);
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_shopping_cart, size: 16, color: Colors.white),
+              SizedBox(width: 4),
+              Text(
+                'Add',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Color(0xff80a8ff),
+          borderRadius: 10,
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          showBorder: false,
+          animation: ButtonAnimation.scale,
+        ),
+      ],
+    );
+  }
+
+  // ✅ Simple Add Button (for home screen)
+  // Widget buildAddButtonSimple(CartController cartController) {
+  //   return GlobalUtils.CustomButton(
+  //     height: 40,
+  //     onPressed: () {
+  //       final cartItem = createCartItem(product);
+  //       cartController.addToCart(cartItem);
+  //     },
+  //     icon: Icon(Icons.add, size: 20),
+  //     iconColor: Colors.white,
+  //     backgroundColor: Color(0xff80a8ff),
+  //     borderRadius: 8,
+  //     padding: EdgeInsets.all(6),
+  //     showBorder: false,
+  //     animation: ButtonAnimation.scale,
+  //   );
+  // }
+  // // ✅ Add to Cart Button (with stock badge)
+  Widget _buildAddButton(CartController cartController, int stock) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Stock Badge (optional but helpful)
+        if (stock <= 10)
+          Container(
+            margin: EdgeInsets.only(bottom: 4),
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: stock <= 5 ? Colors.orange[100] : Colors.green[100],
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              stock <= 5 ? 'Only $stock left!' : '$stock in stock',
+              style: TextStyle(
+                fontSize: 9,
+                color: stock <= 5 ? Colors.orange[900] : Colors.green[900],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+
+        // Add Button
+        GlobalUtils.CustomButton(
+          height: 40,
+          onPressed: () {
+            final cartItem = createCartItem(product);
+            if (cartItem != null) {
+              cartController.addToCart(cartItem);
+            }
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_shopping_cart, size: 18, color: Colors.white),
+              SizedBox(width: 6),
+              Text(
+                'Add to Cart',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Color(0xff80a8ff),
+          borderRadius: 10,
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          showBorder: false,
+          animation: ButtonAnimation.scale,
+        ),
+      ],
+    );
+  }
+  //
+  // // Simple Add Button (fallback for non-search screens)
+  // Widget _buildSimpleAddButton(CartController cartController, bool isDark) {
+  //   return Obx(() {
+  //     final _ = cartController.cartItems.length;
+  //     final productId = getProductId(product);
+  //     final quantity = cartController.getProductQuantity(productId);
+  //     final isInCart = quantity > 0;
+  //
+  //     if (isInCart) {
+  //       return buildQuantityControls(productId, quantity, cartController, isDark);
+  //     }
+  //
+  //     return GlobalUtils.CustomButton(
+  //       height: 40,
+  //       onPressed: () {
+  //         final cartItem = createCartItem(product);
+  //         if (cartItem != null) {
+  //           cartController.addToCart(cartItem);
+  //         }
+  //       },
+  //       child: Row(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           Icon(Icons.add_shopping_cart, size: 18, color: Colors.white),
+  //           SizedBox(width: 4),
+  //           Text(
+  //             'Add',
+  //             style: TextStyle(
+  //               fontSize: 12,
+  //               color: Colors.white,
+  //               fontWeight: FontWeight.w600,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //       backgroundColor: Color(0xff80a8ff),
+  //       borderRadius: 8,
+  //       padding: EdgeInsets.all(6),
+  //       showBorder: false,
+  //       animation: ButtonAnimation.scale,
+  //     );
+  //   });
+  // }
 
   // 🎯 NEW: Search product button with stock management
   Widget _buildSearchProductButton(ProductItem product, CartController cartController, bool isDark) {
@@ -301,7 +714,7 @@ class ProductCard extends StatelessWidget {
 
         return isInCart
             ? buildQuantityControls(productId, quantity, cartController, isDark)
-            : buildAddButton(product, cartController);
+            : /*buildAddButton(product, cartController)*/_buildAddButton(cartController, (product as TopSelling).stock ?? 0);
       });
     }
 
@@ -341,13 +754,13 @@ class ProductCard extends StatelessWidget {
 
       // Show Out of Stock if stock is 0
       if (isStockFetched && stock != null && stock <= 0) {
-        return buildOutOfStockButton();
+        return _buildOutOfStockButton();
       }
 
       // Show cart controls or add button
       return isInCart
           ? buildQuantityControls(productId, quantity, cartController, isDark)
-          : buildAddButton(product, cartController);
+          : /*buildAddButton(product, cartController)*/_buildAddButton(cartController, stock!);
     });
   }
 
@@ -397,44 +810,44 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget buildAddButton(/*dynamic product,*/dynamic product, CartController cartController) {
-    return GlobalUtils.CustomButton(
-      height: 40,
-      onPressed: () {
-        final cartItem = createCartItem(product);
-        cartController.addToCart(cartItem);
-      },
-      icon: Icon(Icons.add, size: 25),
-      iconColor: Colors.white,
-      backgroundColor: Color(0xff80a8ff),
-      borderRadius: 8,
-      padding: EdgeInsets.all(6),
-      showBorder: false,
-      animation: ButtonAnimation.scale,
-    );
-  }
+  // Widget buildAddButton(/*dynamic product,*/dynamic product, CartController cartController) {
+  //   return GlobalUtils.CustomButton(
+  //     height: 40,
+  //     onPressed: () {
+  //       final cartItem = createCartItem(product);
+  //       cartController.addToCart(cartItem);
+  //     },
+  //     icon: Icon(Icons.add, size: 25),
+  //     iconColor: Colors.white,
+  //     backgroundColor: Color(0xff80a8ff),
+  //     borderRadius: 8,
+  //     padding: EdgeInsets.all(6),
+  //     showBorder: false,
+  //     animation: ButtonAnimation.scale,
+  //   );
+  // }
 
-  // 🎯 NEW: Out of Stock button
-  Widget buildOutOfStockButton() {
-    return Container(
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.red[50],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red[200]!),
-      ),
-      child: Center(
-        child: Text(
-          "Out of Stock",
-          style: TextStyle(
-            color: Colors.red[700],
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
+  // // 🎯 NEW: Out of Stock button
+  // Widget buildOutOfStockButton() {
+  //   return Container(
+  //     height: 40,
+  //     decoration: BoxDecoration(
+  //       color: Colors.red[50],
+  //       borderRadius: BorderRadius.circular(8),
+  //       border: Border.all(color: Colors.red[200]!),
+  //     ),
+  //     child: Center(
+  //       child: Text(
+  //         "Out of Stock",
+  //         style: TextStyle(
+  //           color: Colors.red[700],
+  //           fontSize: 12,
+  //           fontWeight: FontWeight.w600,
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
   // Widget buildOutOfStockButton() {
   //   return GlobalUtils.CustomButton(
   //     height: 40,
@@ -1227,20 +1640,33 @@ String getProductSlug(dynamic product) {
 Widget getProductImage(dynamic product) {
   if (product is TopSelling) {
     return product.images != null && product.images!.isNotEmpty
-        ? Image.network(product.images!.first, fit: BoxFit.contain)
-        : Image.asset("assets/images/noImageIcon.png");
+        ? Image.network(product.images!.first, fit: BoxFit.contain, errorBuilder: (context, error, stackTrace) {
+      return Image.asset(
+        "assets/images/noImageIcon.png",
+        fit: BoxFit.contain,
+      );
+    }) : Image.asset("assets/images/noImageIcon.png");
   }
   if (product is ProductDetailsResponseData) {
     final images = product.images;
     if (images != null && images.isNotEmpty) {
-      return Image.network(images.first.toString(), fit: BoxFit.contain);
-    }
+      return Image.network(images.first.toString(), fit: BoxFit.contain, errorBuilder: (context, error, stackTrace) {
+        return Image.asset(
+          "assets/images/noImageIcon.png",
+          fit: BoxFit.contain,
+        );
+      });
+    }else{return Image.asset("assets/images/noImageIcon.png");}
     return Image.asset("assets/images/noImageIcon.png");
   }
   if (product is ProductItem) {
     return product.image!.isNotEmpty
-        ? Image.network(product.image ?? "", fit: BoxFit.contain)
-        : Image.asset("assets/images/noImageIcon.png");
+        ? Image.network(product.image ?? "", fit: BoxFit.contain, errorBuilder: (context, error, stackTrace) {
+      return Image.asset(
+        "assets/images/noImageIcon.png",
+        fit: BoxFit.contain,
+      );
+    }) : Image.asset("assets/images/noImageIcon.png");
   }
   return Image.asset("assets/images/noImageIcon.png");
 }
