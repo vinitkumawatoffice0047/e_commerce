@@ -1,14 +1,26 @@
+import 'dart:io';
+
 import 'package:e_commerce_app/utils/ConsoleLog.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:get/get.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import '../api/api_provider.dart';
 import '../api/web_api_constant.dart';
 import '../utils/app_shared_preferences.dart';
 
- class AccountScreenController{
+ class AccountScreenController extends GetxController{
    String? userAccessToken;
    RxMap<String, dynamic> profile_List = RxMap<String, dynamic>({});
+   RxString name = "".obs;
+   RxString email = "".obs;
+   RxString profileImagePath = "".obs;
+
+   @override
+   void onInit() {
+     super.onInit();
+     getToken(Get.context!);
+   }
 
    Future<void> getProfile(BuildContext context,) async{
      try {
@@ -25,8 +37,21 @@ import '../utils/app_shared_preferences.dart';
              profile_List['user_name'] = profileData['user_name'];
              profile_List['phone'] = profileData['phone'];
              profile_List['email'] = profileData['email'];
-           }
 
+             // check: Kya user ne locally edit kiya hai?
+             String? localName = await AppSharedPreferences.getUserName();
+             String? localEmail = await AppSharedPreferences.getEmail();
+             String? localImagePath  = await AppSharedPreferences.getProfileImage();
+             // Agar local edited data hai, use karo, nahi to API data use karo
+             name.value = (localName != null && localName.isNotEmpty) ? localName : profileData['user_name'] ?? '';
+             email.value = (localEmail != null && localEmail.isNotEmpty) ? localEmail : profileData['email'] ?? '';
+             if (localImagePath != null && localImagePath.isNotEmpty) {
+               profileImagePath.value = localImagePath;
+             }
+             ConsoleLog.printColor(
+                 "Profile loaded: Name = ${name.value}, Email = ${email.value}, Image = ${profileImagePath.value}"
+             );
+           }
          } else {
            Fluttertoast.showToast(msg: response['message'] ?? "");
          }

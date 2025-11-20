@@ -11,6 +11,9 @@ class OrderDetailsScreenController extends GetxController{
   String? userAccessToken;
   Rx<OrderData?> orderList = Rx<OrderData?>(null);
   RxList<OrderItem> orderItemList = <OrderItem>[].obs;
+  RxBool isLoading = false.obs;
+
+
 
   Future<void> getToken(BuildContext context,orderId) async {
     await AppSharedPreferences().getString(AppSharedPreferences.token).then((value){
@@ -20,6 +23,7 @@ class OrderDetailsScreenController extends GetxController{
   }
 
   Future<void> getOrderDetailsList(BuildContext context,String order_id) async{
+    isLoading = true.obs;
     Map<String, dynamic> dict = {
         "order_id":order_id,
       };
@@ -30,6 +34,7 @@ class OrderDetailsScreenController extends GetxController{
 
       ConsoleLog.printColor("Response.....${response}", color: "green");
       if (response != null) {
+        isLoading =false.obs;
         if (response.error != true && response.errorCode == 0) {
             orderList.value=response.orderData!; // Store only the first index
             orderItemList.value=response!.orderItem ??[];
@@ -43,6 +48,7 @@ class OrderDetailsScreenController extends GetxController{
         // description.value=response.data?.discription! ?? "" ;
       }
     } catch (_) {
+      isLoading =false.obs;
       ConsoleLog.printError("Exception...$_...");
       Fluttertoast.showToast(msg: WebApiConstant.ApiError);
     }

@@ -1,11 +1,20 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
+import '../utils/ConsoleLog.dart';
+import '../utils/app_shared_preferences.dart';
+import '../utils/custom_loading.dart';
+import '../utils/reusable_product_grid.dart';
+import 'cart_controller.dart';
+
 class WishlistController extends GetxController {
   // Observable list of wishlist product IDs
-  var wishlistItems = <String>[].obs;
-  
+  var wishlistItems = <dynamic>[].obs;
+  var isLoading = false.obs;
+  final CartController cartController = Get.put(CartController());
+
   @override
   void onInit() {
     super.onInit();
@@ -14,16 +23,19 @@ class WishlistController extends GetxController {
 
   // Load wishlist from SharedPreferences
   Future<void> loadWishlist() async {
+    isLoading.value = true;
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? wishlistJson = prefs.getString('wishlist');
-      
+
       if (wishlistJson != null && wishlistJson.isNotEmpty) {
         final List<dynamic> decoded = json.decode(wishlistJson);
         wishlistItems.value = decoded.cast<String>();
+        isLoading.value = false;
       }
     } catch (e) {
       print('Error loading wishlist: $e');
+      isLoading.value = false;
     }
   }
 
@@ -64,6 +76,35 @@ class WishlistController extends GetxController {
   // Check if product is in wishlist
   bool isInWishlist(String productId) {
     return wishlistItems.contains(productId);
+  }
+
+  // Move product to cart (using reusable cart functionality)
+  Future<void> moveToCart(String productId) async {
+    try {
+      final cartItem = createCartItem(wishlistItems.contains(productId));
+      cartController.addToCart(cartItem);
+      // Use CartController's addToCart method (reusable from product grid)
+      // await cartController.addToCart(cartItem
+      //   /*
+      //   productId: productId,
+      //   quantity: 1,*/
+      // );
+
+      // Remove from wishlist after successfully adding to cart
+      await removeFromWishlist(productId);
+
+      Get.snackbar(
+        'Success',
+        'Moved to cart successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      ConsoleLog.printError('Error moving to cart: $e');
+      Get.snackbar('Error', 'Failed to move to cart',
+          snackPosition: SnackPosition.BOTTOM);
+    }
   }
 
   // Clear entire wishlist

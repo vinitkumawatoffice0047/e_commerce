@@ -22,7 +22,8 @@ class MyOrderScreenController extends GetxController{
   String? userName;
   String? mobileNo;
 
-   RxList<MyOrder> orderList = <MyOrder>[].obs;
+  RxList<MyOrder> orderList = <MyOrder>[].obs;
+  RxBool isLoading = false.obs;
 
 
   Future<void> getToken(BuildContext context,) async {
@@ -88,6 +89,7 @@ class MyOrderScreenController extends GetxController{
 
     };
     try {
+      isLoading = true.obs;
       var response = await ApiProvider().myOrder(
           context,userAccessToken!);
 
@@ -96,17 +98,19 @@ class MyOrderScreenController extends GetxController{
         if (response.error != true && response.errorCode == 0) {
           orderList.value=response.data!.orderList??[];
          // Fluttertoast.showToast(msg: response.message?? "");
-
+          isLoading =false.obs;
         } else {
           Fluttertoast.showToast(msg: response.message ?? "");
         }
 
       }
     } catch (_) {
+      isLoading =false.obs;
       ConsoleLog.printError("Exception...$_...");
       Fluttertoast.showToast(msg: WebApiConstant.ApiError);
     }
   }
+
   Future<void> deleteOrderApi(BuildContext context, int order_id) async{
     Map<String, dynamic> dict = {
       "order_id":order_id,
@@ -125,11 +129,14 @@ class MyOrderScreenController extends GetxController{
         } else {
           Fluttertoast.showToast(msg: response['message'] ?? "");
         }
-
       }
     } catch (_) {
       ConsoleLog.printError("Exception...$_...");
       Fluttertoast.showToast(msg: WebApiConstant.ApiError);
     }
+  }
+
+  Future<void> fetchMyOrders() async {
+    await myOrder(Get.context!);
   }
 }

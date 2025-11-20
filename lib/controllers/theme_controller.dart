@@ -15,130 +15,155 @@ class ThemeController extends GetxController {
   // }
 
   final festivalThemes = {
-    'diwali': {
-      'icon': '🪔',
-      'name': 'Diwali Special',
-      'colors': [Color(0xffff9933), Color(0xffffd700), Color(0xffff6b35)],
+    'january': {
+      'icon': '🎊',
+      'name': 'New Year Celebration',
+      'colors': [Color(0xff1E40AF), Color(0xff7C3AED), Color(0xffDB2777)],
+      'month': 1,
+      'startDay': 1,
+      'endDay': 15,
     },
-    'holi': {
+    'february': {
+      'icon': '❤️',
+      'name': 'Valentine\'s Day Special',
+      'colors': [Color(0xffDC2626), Color(0xffDB2777), Color(0xffEC4899)],
+      'month': 2,
+      'startDay': 10,
+      'endDay': 20,
+    },
+    'march': {
       'icon': '🎨',
-      'name': 'Holi Dhamaka',
-      'colors': [Color(0xffff006e), Color(0xff8338ec), Color(0xff3a86ff)],
+      'name': 'Holi - Festival of Colors',
+      'colors': [Color(0xffDB2777), Color(0xffDC2626), Color(0xff9333EA)],
+      'month': 3,
+      'startDay': 10,
+      'endDay': 25,
     },
-    'navratri': {
-      'icon': '🕉️',
-      'name': 'Navratri Celebration',
-      'colors': [Color(0xffff006e), Color(0xfffffb00), Color(0xff06ffa5)],
+    'april': {
+      'icon': '🌸',
+      'name': 'Spring Festival',
+      'colors': [Color(0xffDB2777), Color(0xffEC4899), Color(0xff9333EA)],
+      'month': 4,
+      'startDay': 1,
+      'endDay': 30,
     },
-    'janmashtami': {
+    'may': {
+      'icon': '☀️',
+      'name': 'Summer Vibes',
+      'colors': [Color(0xffEA580C), Color(0xffDC2626), Color(0xffD97706)],
+      'month': 5,
+      'startDay': 1,
+      'endDay': 31,
+    },
+    'june': {
+      'icon': '🌧️',
+      'name': 'Monsoon Magic',
+      'colors': [Color(0xff059669), Color(0xff0D9488), Color(0xff0891B2)],
+      'month': 6,
+      'startDay': 1,
+      'endDay': 30,
+    },
+    'july': {
+      'icon': '❄️',
+      'name': 'Rainy Season Sale',
+      'colors': [Color(0xff0891B2), Color(0xff0D9488), Color(0xff059669)],
+      'month': 7,
+      'startDay': 1,
+      'endDay': 31,
+    },
+    'august': {
       'icon': '🦚',
-      'name': 'Janmashtami Joy',
-      'colors': [Color(0xff4361ee), Color(0xff7209b7), Color(0xfff72585)],
+      'name': 'Janmashtami & Raksha Bandhan',
+      'colors': [Color(0xff1E40AF), Color(0xff6366F1), Color(0xff7C3AED)],
+      'month': 8,
+      'startDay': 1,
+      'endDay': 31,
     },
-    'rakhi': {
-      'icon': '🧵',
-      'name': 'Raksha Bandhan',
-      'colors': [Color(0xffff6b6b), Color(0xfffeca57), Color(0xff48dbfb)],
+    'september': {
+      'icon': '🍂',
+      'name': 'Autumn Season',
+      'colors': [Color(0xffB45309), Color(0xffD97706), Color(0xffEA580C)],
+      'month': 9,
+      'startDay': 1,
+      'endDay': 30,
     },
-    'ganesh': {
-      'icon': '🐘',
-      'name': 'Ganesh Chaturthi',
-      'colors': [Color(0xfffe9920), Color(0xfffeca57), Color(0xffee5a6f)],
+    'october': {
+      'icon': '🪔',
+      'name': 'Diwali - Festival of Lights',
+      'colors': [Color(0xffDC2626), Color(0xffD97706), Color(0xffEA580C)],
+      'month': 10,
+      'startDay': 1,
+      'endDay': 31,
     },
+    'november': {
+      'icon': '🛍️',
+      'name': 'Black Friday Sale',
+      'colors': [Color(0xff1E293B), Color(0xff334155), Color(0xffDC2626)],
+      'month': 11,
+      'startDay': 1,
+      'endDay': 30,
+    },
+    'december': {
+      'icon': '🎄',
+      'name': 'Christmas & New Year',
+      'colors': [Color(0xffDC2626), Color(0xff059669), Color(0xff7C3AED)],
+      'month': 12,
+      'startDay': 1,
+      'endDay': 31,
+    },
+    // 'diwali': {
+    //   'icon': '🪔',
+    //   'name': 'Diwali Special',
+    //   'colors': [Color(0xffff9933), Color(0xffffd700), Color(0xffff6b35)],
+    // },
+    // 'holi': {
+    //   'icon': '🎨',
+    //   'name': 'Holi Dhamaka',
+    //   'colors': [Color(0xffff006e), Color(0xff8338ec), Color(0xff3a86ff)],
+    // },
+    // 'navratri': {
+    //   'icon': '🕉️',
+    //   'name': 'Navratri Celebration',
+    //   'colors': [Color(0xffff006e), Color(0xfffffb00), Color(0xff06ffa5)],
+    // },
+    // 'janmashtami': {
+    //   'icon': '🦚',
+    //   'name': 'Janmashtami Joy',
+    //   'colors': [Color(0xff4361ee), Color(0xff7209b7), Color(0xfff72585)],
+    // },
+    // 'rakhi': {
+    //   'icon': '🧵',
+    //   'name': 'Raksha Bandhan',
+    //   'colors': [Color(0xffff6b6b), Color(0xfffeca57), Color(0xff48dbfb)],
+    // },
+    // 'ganesh': {
+    //   'icon': '🐘',
+    //   'name': 'Ganesh Chaturthi',
+    //   'colors': [Color(0xfffe9920), Color(0xfffeca57), Color(0xffee5a6f)],
+    // },
   };
 
-  // final categoryThemes = {
-  //   'Grocery': {
-  //     'colors': [Color(0xff06ffa5), Color(0xff00d9ff)],
-  //     'icon': Icons.shopping_basket,
-  //   },
-  //   'Electronics': {
-  //     'colors': [Color(0xff80a8ff), Color(0xff5e60ce)],
-  //     'icon': Icons.phone_android,
-  //   },
-  //   'Fashion': {
-  //     'colors': [Color(0xffff006e), Color(0xffffbe0b)],
-  //     'icon': Icons.checkroom,
-  //   },
-  //   'Home & Kitchen': {
-  //     'colors': [Color(0xffffabab), Color(0xffff6b6b)],
-  //     'icon': Icons.home,
-  //   },
-  //   'Beauty': {
-  //     'colors': [Color(0xffff99c8), Color(0xfffcf6bd)],
-  //     'icon': Icons.spa,
-  //   },
-  //   'Sports': {
-  //     'colors': [Color(0xff4895ef), Color(0xff4cc9f0)],
-  //     'icon': Icons.sports_basketball,
-  //   },
-  //   'Books': {
-  //     'colors': [Color(0xff9d4edd), Color(0xffc77dff)],
-  //     'icon': Icons.menu_book,
-  //   },
-  //   'Toys': {
-  //     'colors': [Color(0xffff6b9d), Color(0xffffc6ff)],
-  //     'icon': Icons.toys,
-  //   },
-  // };
-
-  // // Predefined themes jo pehle se bani hui hain
-  // final Map<String, Map<String, dynamic>> _predefinedCategoryThemes = {
-  //   'Grocery': {
-  //     'colors': [Color(0xff06ffa5), Color(0xff00d9ff)],
-  //     'icon': Icons.shopping_basket,
-  //   },
-  //   'Electronics': {
-  //     'colors': [Color(0xff80a8ff), Color(0xff5e60ce)],
-  //     'icon': Icons.phone_android,
-  //   },
-  //   'Fashion': {
-  //     'colors': [Color(0xffff006e), Color(0xffffbe0b)],
-  //     'icon': Icons.checkroom,
-  //   },
-  //   'Home & Kitchen': {
-  //     'colors': [Color(0xffffabab), Color(0xffff6b6b)],
-  //     'icon': Icons.home,
-  //   },
-  //   'Beauty': {
-  //     'colors': [Color(0xffff99c8), Color(0xfffcf6bd)],
-  //     'icon': Icons.spa,
-  //   },
-  //   'Sports': {
-  //     'colors': [Color(0xff4895ef), Color(0xff4cc9f0)],
-  //     'icon': Icons.sports_basketball,
-  //   },
-  //   'Books': {
-  //     'colors': [Color(0xff9d4edd), Color(0xffc77dff)],
-  //     'icon': Icons.menu_book,
-  //   },
-  //   'Toys': {
-  //     'colors': [Color(0xffff6b9d), Color(0xffffc6ff)],
-  //     'icon': Icons.toys,
-  //   },
-  // };
-
   // Ye color palettes automatically categories ko assign honge
-  final List<List<Color>> _colorPalettes = [
-    [Color(0xff06ffa5), Color(0xff00d9ff)], // Green-Cyan
-    [Color(0xff80a8ff), Color(0xff5e60ce)], // Blue-Purple
-    [Color(0xffff006e), Color(0xffffbe0b)], // Pink-Yellow
-    [Color(0xffffabab), Color(0xffff6b6b)], // Light Red-Red
-    [Color(0xffff99c8), Color(0xfffcf6bd)], // Pink-Cream
-    [Color(0xff4895ef), Color(0xff4cc9f0)], // Blue-Cyan
-    [Color(0xff9d4edd), Color(0xffc77dff)], // Purple-Light Purple
-    [Color(0xffff6b9d), Color(0xffffc6ff)], // Pink-Light Pink
-    [Color(0xfffe9920), Color(0xfffeca57)], // Orange-Yellow
-    [Color(0xff4361ee), Color(0xff7209b7)], // Blue-Purple
-    [Color(0xffff006e), Color(0xff8338ec)], // Pink-Purple
-    [Color(0xff06ffa5), Color(0xfffffb00)], // Green-Yellow
-    [Color(0xffff6b35), Color(0xffffd700)], // Orange-Gold
-    [Color(0xff48dbfb), Color(0xffff6b6b)], // Cyan-Red
-    [Color(0xffee5a6f), Color(0xfffeca57)], // Red-Yellow
+  final List<List<Color>> colorPalettes = [
+    [Color(0xff0D9488), Color(0xff0891B2)], // Teal-Cyan (Dark)
+    [Color(0xff4338CA), Color(0xff6366F1)], // Indigo-Blue (Dark)
+    [Color(0xffDC2626), Color(0xffEA580C)], // Red-Orange (Dark)
+    [Color(0xffB91C1C), Color(0xffDC2626)], // Dark Red
+    [Color(0xffDB2777), Color(0xffF472B6)], // Deep Pink
+    [Color(0xff0284C7), Color(0xff0EA5E9)], // Sky Blue (Dark)
+    [Color(0xff7C3AED), Color(0xff9333EA)], // Purple (Dark)
+    [Color(0xffDB2777), Color(0xffEC4899)], // Pink (Dark)
+    [Color(0xffEA580C), Color(0xffF59E0B)], // Orange-Amber (Dark)
+    [Color(0xff1E40AF), Color(0xff7C3AED)], // Blue-Purple (Dark)
+    [Color(0xffDC2626), Color(0xff9333EA)], // Red-Purple (Dark)
+    [Color(0xff059669), Color(0xffD97706)], // Green-Orange (Dark)
+    [Color(0xffDC2626), Color(0xffD97706)], // Red-Gold (Dark)
+    [Color(0xff0891B2), Color(0xffDC2626)], // Cyan-Red (Dark)
+    [Color(0xffB91C1C), Color(0xffEA580C)], // Dark Red-Orange
   ];
 
   // Ye icons automatically categories ko assign honge
-  final List<IconData> _iconsList = [
+  final List<IconData> iconsList = [
     Icons.shopping_basket,
     Icons.phone_android,
     Icons.checkroom,
@@ -169,13 +194,13 @@ class ThemeController extends GetxController {
     // }
 
     // Agar nahi hai to dynamic generate karo
-    return _generateThemeForCategory(categoryName, categoryImage, index);
+    return generateThemeForCategory(categoryName, categoryImage, index);
   }
 
   // Dynamic theme generate karne ka function
-  Map<String, dynamic> _generateThemeForCategory(String categoryName, String categoryImage, int? index) {
+  Map<String, dynamic> generateThemeForCategory(String categoryName, String categoryImage, int? index) {
     // Category name se consistent hash generate karo
-    int hash = _generateHash(categoryName);
+    int hash = generateHash(categoryName);
 
     // Agar index available hai to use bhi consider karo
     if (index != null) {
@@ -183,18 +208,18 @@ class ThemeController extends GetxController {
     }
 
     // Hash se color palette aur icon select karo
-    int colorIndex = hash % _colorPalettes.length;
+    int colorIndex = hash % colorPalettes.length;
     // int iconIndex = hash % _iconsList.length;
 
     return {
-      'colors': _colorPalettes[colorIndex],
+      'colors': colorPalettes[colorIndex],
       'image': categoryImage,
       // 'icon': _iconsList[iconIndex],
     };
   }
 
   // String se consistent hash generate karne ka function
-  int _generateHash(String text) {
+  int generateHash(String text) {
     int hash = 0;
     for (int i = 0; i < text.length; i++) {
       hash = ((hash << 5) - hash) + text.codeUnitAt(i);
@@ -206,17 +231,47 @@ class ThemeController extends GetxController {
 
 
   String getCurrentFestival() {
-    final month = DateTime.now().month;
-    final day = DateTime.now().day;
+    final now = DateTime.now();
+    final month = now.month;
+    final day = now.day;
 
-    if ((month == 10 && day >= 20) || (month == 11 && day <= 15)) return 'diwali';
-    if (month == 3 && day >= 15 && day <= 25) return 'holi';
-    if ((month == 9 && day >= 15) || (month == 10 && day <= 10)) return 'navratri';
-    if (month == 8 && day >= 20 && day <= 30) return 'janmashtami';
-    if (month == 8 && day >= 1 && day <= 15) return 'rakhi';
-    if (month == 9 && day >= 1 && day <= 15) return 'ganesh';
+    // Har festival ko check karo
+    for (var entry in festivalThemes.entries) {
+      final theme = entry.value;
+      final festivalMonth = theme['month'] as int;
+      final startDay = theme['startDay'] as int;
+      final endDay = theme['endDay'] as int;
 
-    return 'default';
+      if (month == festivalMonth && day >= startDay && day <= endDay) {
+        return entry.key;
+      }
+    }
+
+    // Agar koi specific festival nahi hai to current month return karo
+    final monthKeys = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+
+    return monthKeys[month - 1];
+
+    // final month = DateTime.now().month;
+    // final day = DateTime.now().day;
+
+    // if ((month == 10 && day >= 20) || (month == 11 && day <= 15)) return 'diwali';
+    // if (month == 3 && day >= 15 && day <= 25) return 'holi';
+    // if ((month == 9 && day >= 15) || (month == 10 && day <= 10)) return 'navratri';
+    // if (month == 8 && day >= 20 && day <= 30) return 'janmashtami';
+    // if (month == 8 && day >= 1 && day <= 15) return 'rakhi';
+    // if (month == 9 && day >= 1 && day <= 15) return 'ganesh';
+
+    // return 'default';
+  }
+
+  // Current festival ka data get karne ke liye helper function
+  Map<String, dynamic>? getCurrentFestivalData() {
+    final currentKey = getCurrentFestival();
+    return festivalThemes[currentKey];
   }
 
   void toggleTheme() {

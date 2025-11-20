@@ -181,6 +181,7 @@ class ApiProvider {
   }
 
 
+
   //Signup API (Post)
   Future<Map<String, dynamic>?> signupApi(context, String url, Map<String, dynamic> dictParameter, String token) async {
     Map<String, dynamic>? result;
@@ -494,6 +495,8 @@ class ApiProvider {
       return result;
     }
   }
+
+  // Search Product Api (Post)
   Future<SearchResponseApi?> searchProductApi(context, String url, Map<String, dynamic> dictParameter, String token) async {
     SearchResponseApi? result;
     // if(await ConnectionValidator().check()){
@@ -625,6 +628,10 @@ class ApiProvider {
       return result;
     }
   }
+
+
+
+
 
 
   // Future<SearchResponseApi?> searchProduct(
