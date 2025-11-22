@@ -252,7 +252,7 @@ class ProductCard extends StatelessWidget {
       // Force rebuild when cart changes
       final _ = cartController.cartItems.length;
 
-      final quantity = cartController.getProductQuantity(productId);
+      final quantity = cartController.getProductQuantity(productId!);
       final isInCart = quantity > 0;
 
       // 🚨 PRIORITY 1: If in cart, show quantity controls (no stock check)
@@ -800,7 +800,7 @@ class CartItemCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.network(
-          item.image,
+          item.image!,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) {
             return Icon(Icons.image, size: 35, color: Colors.grey);
@@ -815,7 +815,7 @@ class CartItemCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          item.title,
+          item.title!,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -863,7 +863,7 @@ class CartItemCard extends StatelessWidget {
 
   Widget buildQuantityControlsForCart(CartController cartController) {
     // 🎯 STOCK CHECK: Get actual stock for this product
-    final stock = getActualStockForCart(item.productId);
+    final stock = getActualStockForCart(item.productId!);
     return Container(
       decoration: BoxDecoration(
         color: Color(0xff80a8ff).withOpacity(0.1),
@@ -876,7 +876,7 @@ class CartItemCard extends StatelessWidget {
               // 🎯 CONDITION: Quantity stock se kam honi chahiye
               if (item.qty < stock) {
                 cartController.updateQuantity(
-                  item.productId,
+                  item.productId!,
                   item.qty + 1,
                 );
               } else {
@@ -917,7 +917,7 @@ class CartItemCard extends StatelessWidget {
           GlobalUtils.CustomButton(
             onPressed: () {
               cartController.updateQuantity(
-                item.productId,
+                item.productId!,
                 item.qty - 1,
               );
             },
@@ -1007,7 +1007,7 @@ class CartItemCardHorizontal extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    item.image,
+                    item.image!,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return Icon(Icons.image, size: 35, color: Colors.grey);
@@ -1023,7 +1023,7 @@ class CartItemCardHorizontal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.title,
+                      item.title!,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -1081,7 +1081,7 @@ class CartItemCardHorizontal extends StatelessWidget {
                 GlobalUtils.CustomButton(
                   onPressed: () {
                     cartController.updateQuantity(
-                      item.productId,
+                      item.productId!,
                       item.qty - 1,
                     );
                   },
@@ -1107,7 +1107,7 @@ class CartItemCardHorizontal extends StatelessWidget {
                 GlobalUtils.CustomButton(
                   onPressed: () {
                     cartController.updateQuantity(
-                      item.productId,
+                      item.productId!,
                       item.qty + 1,
                     );
                   },
@@ -1356,7 +1356,7 @@ String getProductDescription(dynamic product) {
 String getProductId(dynamic product) {
   if (product is TopSelling) return product.product_id?.toString() ?? '';
   if (product is ProductDetailsResponseData) return product.product_id?.toString() ?? '';
-  if (product is ProductItem) return product.productId;
+  if (product is ProductItem) return product.productId!;
   return '';
 }
 

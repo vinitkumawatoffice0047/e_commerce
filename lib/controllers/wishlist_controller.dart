@@ -201,12 +201,12 @@ class WishlistController extends GetxController {
     if (!isInWishlist(product.productId!)) {
       wishlistItems.add(product);
       await saveWishlist();
-      Get.snackbar(
-        'Wishlist',
-        'Added to wishlist',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: Duration(seconds: 1),
-      );
+      // Get.snackbar(
+      //   'Wishlist',
+      //   'Added to wishlist',
+      //   snackPosition: SnackPosition.BOTTOM,
+      //   duration: Duration(seconds: 1),
+      // );
     }
   }
 
@@ -224,7 +224,7 @@ class WishlistController extends GetxController {
 
     if (isInWishlist(product.productId!)) {
       await removeFromWishlist(product.productId!);
-      Get.snackbar('Wishlist', 'Removed from wishlist', snackPosition: SnackPosition.BOTTOM, duration: Duration(seconds: 1));
+      // Get.snackbar('Wishlist', 'Removed from wishlist', snackPosition: SnackPosition.BOTTOM, duration: Duration(seconds: 1));
     } else {
       await addToWishlist(product);
     }
@@ -239,39 +239,50 @@ class WishlistController extends GetxController {
   // --- Move to Cart Logic ---
   Future<void> moveToCart(ProductItem product) async {
     try {
-      // 1. Cart Controller ke function ko call karein
-      // Note: Make sure aapke CartController ka addToCart function ProductModel accept kare
-      // await cartController.addToCart(product);
-
-      final cartItem = createCartItem(wishlistItems.contains(product));
-      await ()=> cartController.addToCart(cartItem);
-
-      // Agar aapka cartController quantity bhi mangta hai, toh aise likhein:
-      // cartController.addToCart(product, quantity: 1);
-
-      // 2. Wishlist se remove karein
-      if(product.productId != null) {
-        await removeFromWishlist(product.productId!);
+      // VALIDATION: Check if product ID exists
+      if (product.productId == null || product.productId!.isEmpty) {
+        Get.snackbar(
+          'Error',
+          'Product ID is missing',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: Duration(seconds: 2),
+        );
+        return;
       }
 
-      // Get.snackbar(
-      //   'Success',
-      //   'Moved to cart successfully',
-      //   snackPosition: SnackPosition.BOTTOM,
-      //   backgroundColor: Colors.green,
-      //   colorText: Colors.white,
-      // );
+      // ✅ FIX 1: createCartItem ko product object pass karo (boolean nahi)
+      final cartItem = createCartItem(product);
+
+      // ✅ FIX 2: Directly addToCart call karo (correct syntax)
+      cartController.addToCart(cartItem);
+
+      // Remove from wishlist after successfully adding to cart
+      await removeFromWishlist(product.productId!);
+
+      // Success message already shown by cartController.addToCart()
+      // No need to show duplicate snackbar
+
     } catch (e) {
       ConsoleLog.printError('Error moving to cart: $e');
-      Get.snackbar('Error', 'Failed to move to cart',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Failed to move to cart: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 2),
+      );
     }
   }
 
-  // Clear entire wishlist
+  // --- Clear entire wishlist ---
   Future<void> clearWishlist() async {
     wishlistItems.clear();
     await saveWishlist();
+    Get.snackbar(
+      'Wishlist',
+      'Wishlist cleared',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: Duration(seconds: 1),
+    );
   }
 
   // Get wishlist count
