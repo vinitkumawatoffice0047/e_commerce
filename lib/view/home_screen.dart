@@ -534,7 +534,7 @@ class _HomeScreenState extends State<HomeScreen> {
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20),
           crossAxisCount: 2,
-          childAspectRatio: 0.53,
+          childAspectRatio: 0.50,
         ),
 
         // Padding(

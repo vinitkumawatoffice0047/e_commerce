@@ -41,9 +41,9 @@
 // }
 
 class ProductItem {
-  String productId;
-  String image;
-  String title;
+  String? productId;
+  String? image;
+  String? title;
   List<String>? images;
   String discription;
   dynamic price;

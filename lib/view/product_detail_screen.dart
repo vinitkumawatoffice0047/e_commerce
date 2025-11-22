@@ -9,7 +9,6 @@ import '../controllers/wishlist_controller.dart';
 import '../models/ProductDetailsApiResponseModel.dart';
 import '../models/product_model.dart';
 import '../utils/global_utils.dart';
-import '../models/CartListApiResponseModel.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String slug;
@@ -546,8 +545,8 @@ Shop now on our app!
                               productId: product.product_id.toString(),
                               images: product.images?.isNotEmpty == true ? product.images! : [],
                               image: product.images?.isNotEmpty == true ? product.images!.first : '',
-                              title: product.title.toString() ?? '',
-                              discription: product.discription.toString() ?? '',
+                              title: product.title?.toString() ?? '',
+                              discription: product.discription?.toString() ?? '',
                               price: parseToDouble(product.price),
                               sellPrice: parseToDouble(product.discPrice ?? product.price),
                               qty: 1,
@@ -584,7 +583,20 @@ Shop now on our app!
                         message: 'Removed from wishlist',
                       );
                     } else {
-                      wishlistController.addToWishlist(productId);
+                      final wishlistItem = ProductItem(
+                        productId: product.product_id.toString(),
+                        images: product.images?.isNotEmpty == true ? product.images! : [],
+                        image: product.images?.isNotEmpty == true ? product.images!.first : '',
+                        title: product.title?.toString() ?? '',
+                        discription: product.discription?.toString() ?? '',
+                        price: parseToDouble(product.price),
+                        sellPrice: parseToDouble(product.discPrice ?? product.price),
+                        qty: 1,
+                        slug: product.slug ?? '',
+                      );
+                      // 2. Ab object pass karein
+                      wishlistController.addToWishlist(wishlistItem);
+                      // wishlistController.addToWishlist(productId);
                       GlobalUtils.showSnackbar(
                         title: 'Added',
                         message: 'Added to wishlist',
