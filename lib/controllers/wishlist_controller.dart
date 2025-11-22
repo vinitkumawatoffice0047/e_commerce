@@ -258,7 +258,6 @@ class WishlistController extends GetxController {
 
       // Remove from wishlist after successfully adding to cart
       await removeFromWishlist(product.productId!);
-
       // Success message already shown by cartController.addToCart()
       // No need to show duplicate snackbar
 
